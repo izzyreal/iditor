@@ -29,6 +29,9 @@ CPMAddPackage(
 add_executable(iditor
         src/main/main.cpp
         src/main/Editor.cpp
+        src/main/Preproc.cpp
+        src/main/Include.cpp
+        src/main/Globals.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc

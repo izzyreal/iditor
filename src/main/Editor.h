@@ -62,8 +62,6 @@ public:
 
   int handle(int event) override;
 
-  std::vector<TSNode> getCurrentNode();
-
   void text(const char *val)
   {
     tbuff->text(val);
@@ -73,21 +71,7 @@ private:
   Fl_Text_Buffer *tbuff;
   Fl_Text_Buffer *sbuff;
 
-  static std::vector<std::string> includeDirectories;
-
   std::vector<std::string> preprocessorDefinitions;
-
-  void cachePreprocessorDefinitions(TSNode n, std::string& text);
-  void addPreprocessorDefinitions(TSNode n, std::vector<std::string>& directives, std::string& text);
-
-
-  std::vector<std::string> getFirstIdentifier(TSNode n, std::string &text);
-
-  void getDeclarations(TSNode node, std::vector<std::string> &declarations, std::string &text);
-  std::string getNamespace(TSNode node, std::string &text);
-  void listIncludeDeclarations();
-
-  void printDeclarations(TSTree* t, std::string& text, const std::string& file_name);
 
   TSParser *parser = ts_parser_new();
   TSTree *tree = nullptr;

@@ -11,6 +11,9 @@ TSLanguage *tree_sitter_cpp();
 
 Editor::Editor(int X, int Y, int W, int H) : Fl_Text_Editor(X, Y, W, H)
 {
+  mVScrollBar->color(FL_BLACK);
+  mHScrollBar->color(FL_BLACK);
+
   load_font();
 
   ts_parser_set_language(parser, tree_sitter_cpp());
@@ -69,6 +72,7 @@ int Editor::handle(int event)
   if (event == FL_KEYBOARD) {
     int key = Fl::event_key();
     switch (key) {
+      case FL_LEFT_MOUSE:
       case FL_Up:
       case FL_Down:
       case FL_Left:
@@ -94,6 +98,12 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 {
   if (nDeleted > 0) {
     sbuff->remove(pos, pos + nDeleted);
+  }
+
+  if (nInserted > 0) {
+    Fl::remove_timeout(Editor::blinkCursor);
+    cursor_style(SIMPLE_CURSOR);
+    Fl::add_timeout(0.5, Editor::blinkCursor, this);
   }
 
   const char *source_code = tbuff->text();

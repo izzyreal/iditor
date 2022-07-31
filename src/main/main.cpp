@@ -9,8 +9,8 @@ int main()
   Globals::includeDirectories.emplace(
       "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1");
   Globals::includeDirectories.emplace("/Users/izmar/git/editor/inctest");
-
-  auto* win = new Fl_Window(720, 300, "Editor");
+  Fl::scrollbar_size(8);
+  auto* win = new Fl_Window(500, 100, 600, 700, "Editor");
 
   auto editor = new Editor(0, 0, win->w(), win->h());
   editor->text("class Foo { int x = 42; };\n");

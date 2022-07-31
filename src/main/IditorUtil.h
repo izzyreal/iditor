@@ -41,6 +41,10 @@ public:
 
   static void traverse(TSNode n, const std::string& text, std::function<void(TSNode)> f)
   {
+    auto ast = ts_node_string(n);
+    if (std::string(ast).find("ERROR") != std::string::npos)
+      return;
+
     if (strcmp(ts_node_type(n), "preproc_ifdef") == 0)
     {
       auto id_node = ts_node_child(n, 1);
@@ -69,6 +73,14 @@ public:
     for (int i = 0; i < ts_node_child_count(node); i++) {
       collectLeafNodes(ts_node_child(node, i), leafNodes);
     }
+  }
+
+  static void removeNodeFromText(TSNode n, std::string& text, int& added)
+  {
+    auto st = ts_node_start_byte(n) + added;
+    auto end = ts_node_end_byte(n) + added;
+    text = text.substr(0, st) + text.substr(end);
+    added -= end - st;
   }
 
   static std::string getNodeText(TSNode node, std::string &text)

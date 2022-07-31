@@ -47,10 +47,10 @@ public:
       auto def_to_find = text.substr(ts_node_start_byte(id_node), ts_node_end_byte(id_node) - ts_node_start_byte(id_node));
       if (Globals::definitions.find(def_to_find) == Globals::definitions.end())
       {
-        printf("Definition %s was not found\n", def_to_find.c_str());
+//        printf("Definition %s was not found\n", def_to_find.c_str());
         return;
       } else {
-        printf("Definition %s was found, continueing processing\n", def_to_find.c_str());
+//        printf("Definition %s was found, continueing processing\n", def_to_find.c_str());
       }
     }
 
@@ -138,7 +138,7 @@ public:
 
   static std::vector<std::filesystem::path> findIncludeFileInIncludeDirs(const std::string& relPath)
   {
-    printf("Looking for relPath %s\n", relPath.c_str());
+//    printf("Looking for relPath %s\n", relPath.c_str());
 
     if (relPath == "endian.h") return {};
 

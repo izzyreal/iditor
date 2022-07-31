@@ -112,7 +112,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   TSNode root_node = ts_tree_root_node(tree);
   char *string = ts_node_string(root_node);
-  printf("Syntax tree: %s\n", string);
+//  printf("Syntax tree: %s\n", string);
   free(string);
 
   if (nDeleted > 0) {

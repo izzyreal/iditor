@@ -39,10 +39,10 @@ public:
     return result;
   }
 
-  static void traverse(TSNode n, const std::string& text, std::function<void(TSNode)> f)
+  static void traverse(TSNode n, const std::string& text, std::function<void(TSNode)> f, bool ignore_errors = false)
   {
     auto ast = ts_node_string(n);
-    if (std::string(ast).find("ERROR") != std::string::npos)
+    if (!ignore_errors && std::string(ast).find("ERROR") != std::string::npos)
       return;
 
     if (strcmp(ts_node_type(n), "preproc_ifdef") == 0)
@@ -59,6 +59,7 @@ public:
     }
 
     f(n);
+
     for (int i = 0; i < ts_node_child_count(n); i++)
       traverse(ts_node_child(n, i), text, f);
   }

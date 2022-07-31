@@ -18,7 +18,9 @@ Editor::Editor(int X, int Y, int W, int H) : Fl_Text_Editor(X, Y, W, H)
   static const Fl_Text_Editor::Style_Table_Entry stable[] = {
       {FL_GRAY,       test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_GREEN, test_font, 12, ATTR_BGCOLOR},
-      {FL_RED,        test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_CYAN,  test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_YELLOW,  test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_MAGENTA,  test_font, 12, ATTR_BGCOLOR},
   };
 
   tbuff = new Fl_Text_Buffer();
@@ -90,44 +92,72 @@ int Editor::handle(int event)
 
 void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *)
 {
-  if (nInserted == 0 && nDeleted == 0) return;
-
-  if (nInserted > 0) {
-    char *style = new char[nInserted + 1];
-    memset(style, 'A', nInserted);
-    style[nInserted] = '\0';
-    sbuff->insert(pos, style);
-    delete[] style;
-  }
-
   if (nDeleted > 0) {
     sbuff->remove(pos, pos + nDeleted);
   }
 
-  const char* source_code = tbuff->text();
+  const char *source_code = tbuff->text();
 
-  auto preprocessed = Preproc().getPreprocessed(source_code, "/Users/izmar/git/editor/inctest");
+//  auto preprocessed = Preproc().getPreprocessed(source_code, "/Users/izmar/git/editor/inctest");
+
+  std::string preprocessed = source_code;
 
   tree = ts_parser_parse_string(parser, nullptr, preprocessed.c_str(), strlen(preprocessed.c_str()));
 
   TSNode root_node = ts_tree_root_node(tree);
   char *string = ts_node_string(root_node);
-  printf("Syntax tree: %s\n", string);
+//  printf("Syntax tree: %s\n", string);
   free(string);
 
   if (nDeleted > 0) {
     return;
   }
 
-  int start = pos;
-  int end = pos + nInserted;
+  std::vector<std::string> keywords{"extern", "auto", "sizeof", "switch", "case", "static", "const", "new", "for", "if", "else", "void", "int", "bool", "long", "float", "struct", "short", "unsigned", "class"};
+  std::string text = tbuff->text();
 
-  for (int i = start; i < end; i++) {
-    unsigned int c = tbuff->char_at(i);
-    if (strchr("01234", static_cast<int>(c))) sbuff->replace(i, i + 1, "B");
-    else if (strchr("56789", static_cast<int>(c))) sbuff->replace(i, i + 1, "C");
-    else sbuff->replace(i, i + 1, "A");
-  }
+  auto highlight = [&](TSNode n) {
+    auto st = ts_node_start_byte(n);
+    auto end = ts_node_end_byte(n);
+    auto node_text = IditorUtil::getNodeText(n, text);
+
+    if (std::find(keywords.begin(), keywords.end(), node_text) != keywords.end()) {
+      for (int i = st; i < end; i++) {
+        sbuff->replace(i, i + 1, "B");
+      }
+    } else {
+      auto t = ts_node_type(n);
+      std::string style = "A";
+
+      if (std::string(t).find("identifier") != std::string::npos)
+      {
+        style = "C";
+      }
+      else if (strcmp(t, "number_literal") == 0)
+      {
+        style = "D";
+      }
+      else if (strcmp(t, "#include") == 0)
+      {
+        style = "E";
+      }
+
+      for (int i = st; i < end; i++)
+        sbuff->replace(i, i + 1, style.c_str());
+    }
+  };
+
+  if (nDeleted == 0 && nInserted == 0) return;
+
+  std::vector<TSNode> leaf_nodes;
+  auto text_tree = ts_parser_parse_string(parser, nullptr, text.c_str(), strlen(text.c_str()));
+  IditorUtil::collectLeafNodes(ts_tree_root_node(text_tree), leaf_nodes);
+
+  for (int i = 0; i < text.size(); i++)
+    sbuff->replace(i, i + 1, "A");
+
+  for (auto &n: leaf_nodes)
+    highlight(n);
 }
 
 void Editor::load_font()

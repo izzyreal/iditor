@@ -44,6 +44,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   };
 
   auto proc_define = [&](TSNode n) {
+    return;
     auto id_node = ts_node_child(n, 1);
     auto id = IditorUtil::getNodeText(id_node, unprocessed);
 
@@ -61,6 +62,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   };
 
   auto proc_replace_macro_invocation = [&](TSNode n) {
+    return;
     auto m = Globals::macros.find(IditorUtil::getNodeText(n, unprocessed));
 
     if (m != Globals::macros.end())
@@ -94,6 +96,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   };
 
   auto proc_replace_macro_definition = [&](TSNode n) {
+    return;
     auto id = IditorUtil::getNodeText(ts_node_child(n, 1), unprocessed);
     auto body = IditorUtil::getNodeText(ts_node_child(n, 3), unprocessed);
 
@@ -115,7 +118,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
       args_concatenated_again += args[i];
       if (i != args.size() - 1) args_concatenated_again += ",";
     }
-    printf("Registered preprocessor function definition '%s %s'\n", id.c_str(), args_concatenated_again.c_str());
+//    printf("Registered preprocessor function definition '%s %s'\n", id.c_str(), args_concatenated_again.c_str());
     IditorUtil::removeNodeFromText(n, result, added);
   };
 
@@ -150,7 +153,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   };
 
   IditorUtil::traverse(ts_tree_root_node(tree), unprocessed, f);
-  printf("Preproc result:\n%s\n", result.c_str());
+//  printf("Preproc result:\n%s\n", result.c_str());
   return result;
 }
 

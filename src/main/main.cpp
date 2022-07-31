@@ -13,7 +13,7 @@ int main()
   auto* win = new Fl_Window(720, 300, "Editor");
 
   auto editor = new Editor(0, 0, win->w(), win->h());
-//  editor->text("#define min(X, Y)  ((X) < (Y) ? (X) : (Y))\n#define max(X, Y)  ((X) > (Y) ? (X) : (Y))\nmin (1, 2);\nmax (4, 5);\n");
+  editor->text("class Foo { int x = 42; };\n");
   win->resizable(editor);
   win->show();
 

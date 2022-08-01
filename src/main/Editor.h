@@ -85,13 +85,7 @@ private:
 
   void load_font();
 
-  void free_extra_font()
-  {
-    if (loaded_font) {
-      v_unload_private_font("/Users/izmar/git/editor/resources/SF-Mono-Regular.otf");
-    }
-    loaded_font = 0;
-  }
+  void unload_font();
 
   void ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *);
 

@@ -60,7 +60,7 @@ void Editor::blinkCursor(void *data)
 
 Editor::~Editor()
 {
-  free_extra_font();
+  unload_font();
   ts_tree_delete(tree);
   ts_parser_delete(parser);
 }
@@ -108,7 +108,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   const char *source_code = tbuff->text();
 
-//  auto preprocessed = Preproc().getPreprocessed(source_code, "/Users/izmar/git/editor/inctest");
+//  auto preprocessed = Preproc().getPreprocessed(source_code, "/Users/izmar.verhage/git/iditor/inctest");
 
   std::string preprocessed = source_code;
 
@@ -172,9 +172,20 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
 void Editor::load_font()
 {
-  loaded_font = i_load_private_font("/Users/izmar/git/editor/resources/SF-Mono-Regular.otf");
-
-  if (loaded_font) {
+  auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
+  loaded_font = i_load_private_font(font_file.c_str());
+  if (loaded_font)
+  {
     Fl::set_font(test_font, "SF Mono Regular");
   }
+}
+
+void Editor::unload_font()
+{
+  if (loaded_font)
+  {
+    auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
+    v_unload_private_font(font_file.c_str());
+  }
+  loaded_font = 0;
 }

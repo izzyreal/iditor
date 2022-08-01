@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.19)
+
+include(cmake/CPM.cmake)
+include(cmake/ResourceBundling.cmake)
+
 set(CMAKE_CXX_STANDARD 17)
 
 project(iditor)
 
-include(cmake/CPM.cmake)
 
 CPMAddPackage(
         NAME fltk
@@ -49,3 +52,5 @@ target_link_libraries(iditor PUBLIC fltk)
 if (APPLE)
     target_link_libraries(iditor PUBLIC "-framework Cocoa -framework Foundation")
 endif()
+
+_bundle_resources(iditor)

@@ -1,5 +1,6 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
+
 #include "Editor.h"
 
 #include "Globals.h"
@@ -41,22 +42,28 @@ int main()
   
   auto* win = new Fl_Window(500, 100, 600, 700, "iditor");
 
-  auto brow = new Fl_Hold_Browser(10, win->h()- 100, win->w()-20, win->h(), "Suggestions");
-  brow->callback(HoldBrowserCallback);
-  brow->color(FL_BLACK);
-  brow->color2(FL_GRAY);
-  brow->selection_color(FL_BLUE);
-  brow->textcolor(FL_GRAY);
-  brow->box(FL_NO_BOX);
-  brow->textsize(12);
-  win->add(brow);
-  win->show();
+  win->begin();
 
-  auto editor = new Editor(0, 0, win->w(), win->h() - 100, brow);
+  auto editor = new Editor(0, 0, win->w(), win->h());
+  auto browser = new Fl_Hold_Browser(0, 0, 0, 0, "Suggestions");
+  browser->box(FL_FLAT_BOX);
+  browser->callback(HoldBrowserCallback);
+  browser->color(FL_DARK3);
+  browser->color2(FL_GRAY);
+  browser->selection_color(FL_BLUE);
+  browser->textcolor(FL_GRAY);
+  browser->scrollbar_size(0);
+  browser->scrollbar_width(0);
+  browser->textsize(12);
+  browser->clear_visible_focus();
+  browser->hide();
+  editor->setBrowser(browser);
   editor->text("class Foo { int x = 42; };\n");
   win->add(editor);
+  win->add(browser);
   win->resizable(editor);
-
+  win->show();
+  win->end();
   auto result = Fl::run();
   return result;
 }

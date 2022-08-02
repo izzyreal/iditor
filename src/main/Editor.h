@@ -58,10 +58,12 @@ static void v_unload_private_font(const char *pf)
 
 class Editor : public Fl_Text_Editor {
 public:
-  Editor(int X, int Y, int W, int H, Fl_Hold_Browser* brow);
+  Editor(int X, int Y, int W, int H);
   ~Editor() override;
 
   int handle(int event) override;
+
+  void setBrowser(Fl_Hold_Browser* browser);
 
   void text(const char *val)
   {
@@ -71,8 +73,9 @@ public:
 private:
   Fl_Text_Buffer *tbuff;
   Fl_Text_Buffer *sbuff;
-  Fl_Hold_Browser *brow;
+  Fl_Hold_Browser *browser;
   std::vector<std::string> preprocessorDefinitions;
+  std::vector<std::string> browser_items;
 
   TSParser *parser = ts_parser_new();
   TSTree *tree = nullptr;
@@ -81,6 +84,9 @@ private:
   Fl_Font test_font = (FL_FREE_FONT);
 
   bool cursorOn = true;
+
+  void show_browser();
+  void hide_browser();
 
   static void blinkCursor(void *cursorOn);
 

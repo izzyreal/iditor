@@ -8,14 +8,10 @@ extern "C" {
 TSLanguage *tree_sitter_cpp();
 }
 
-Editor::Editor(int X, int Y, int W, int H, Fl_Hold_Browser *brow) : Fl_Text_Editor(X, Y, W, H)
+Editor::Editor(int X, int Y, int W, int H)
+    : Fl_Text_Editor(X, Y, W, H), browser(nullptr)
 {
   load_font();
-
-  this->brow = brow;
-
-  brow->textfont(test_font);
-
   mVScrollBar->color(FL_BLACK);
   mHScrollBar->color(FL_BLACK);
 
@@ -38,8 +34,8 @@ Editor::Editor(int X, int Y, int W, int H, Fl_Hold_Browser *brow) : Fl_Text_Edit
   highlight_data(sbuff, stable, stable_size, 'A', nullptr, nullptr);
   tbuff->add_modify_callback(ModifyCallback_STATIC, (void *) this);
 
-  set_flag(NOBORDER);
   color(FL_BLACK);
+  color2(FL_YELLOW);
   cursor_color(FL_DARK_YELLOW);
   cursor_style(SIMPLE_CURSOR);
   selection_color(FL_DARK_CYAN);
@@ -57,7 +53,8 @@ void Editor::blinkCursor(void *data)
   } else {
     editor->cursor_style(DIM_CURSOR);
   }
-
+  editor->redraw();
+  editor->browser->redraw();
   Fl::repeat_timeout(0.5, blinkCursor, data);
 }
 
@@ -86,11 +83,23 @@ int Editor::handle(int event)
 
   auto result = Fl_Text_Editor::handle(event);
 
+  if (event == FL_LEFT_MOUSE) {
+    Fl::remove_timeout(Editor::blinkCursor);
+    cursor_style(SIMPLE_CURSOR);
+    Fl::add_timeout(0.5, Editor::blinkCursor, this);
+    hide_browser();
+  }
+
+  if (event == FL_MOUSEWHEEL)
+  {
+    if (browser_items.size() > 0)
+      show_browser();
+  }
+
   if (event == FL_KEYBOARD) {
     int key = Fl::event_key();
     switch (key) {
       case FL_BackSpace:
-      case FL_LEFT_MOUSE:
       case FL_Up:
       case FL_Down:
       case FL_Left:
@@ -143,7 +152,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
     if (word_end > word_st) {
       auto search_string = tbuff->text_range(word_st, word_end);
-      std::vector<std::string> suggestions;
+      browser_items.clear();
 
       auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
       if (!startsWithSuggestions.empty()) {
@@ -152,7 +161,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
           printf("%s ", d.c_str());
         }
         printf("\n");
-        suggestions = startsWithSuggestions;
+        browser_items = startsWithSuggestions;
       } else {
         auto containsSuggestions = Db::instance()->get_declarations_containing(search_string);
         if (!containsSuggestions.empty()) {
@@ -161,22 +170,20 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
             printf("%s ", d.c_str());
           }
           printf("\n");
-          suggestions = containsSuggestions;
+          browser_items = containsSuggestions;
         }
       }
 
-      brow->clear();
-
-      if (!suggestions.empty()) {
-        for (auto &s: suggestions)
-          brow->add(s.c_str());
-        brow->select(1);
+      if (!browser_items.empty()) {
+        show_browser();
+      } else {
+        hide_browser();
       }
+    } else {
+      hide_browser();
     }
-  }
-  else
-  {
-    brow->clear();
+  } else {
+    hide_browser();
   }
 
   if (nDeleted > 0) {
@@ -243,4 +250,41 @@ void Editor::unload_font()
     v_unload_private_font(font_file.c_str());
   }
   loaded_font = 0;
+}
+
+void Editor::setBrowser(Fl_Hold_Browser *_browser)
+{
+  browser = _browser;
+  browser->textfont(test_font);
+}
+
+void Editor::show_browser()
+{
+  browser->show();
+  int X = 0, Y = 0;
+
+  auto st = tbuff->word_start(mCursorPos);
+  auto end = tbuff->word_start(mCursorPos);
+
+  if (st > mCursorPos || st == end) st = tbuff->word_start(mCursorPos - 1);
+
+  browser->clear();
+
+  for (auto &s: browser_items) {
+    browser->add(s.c_str());
+  }
+  browser->select(1);
+
+  if (position_to_xy(st, &X, &Y)) {
+    browser->resize(X - 3, Y + 16, 200, browser_items.size() * 14);
+  }
+  redraw();
+  browser->redraw();
+}
+
+void Editor::hide_browser()
+{
+  browser_items.clear();
+  browser->hide();
+  redraw();
 }

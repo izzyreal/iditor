@@ -78,8 +78,9 @@ int Editor::handle(int event)
       auto end = tbuff->word_end(i);
       auto word = tbuff->text_range(st, end);
       Db::instance()->insert_declaration(word, "");
-      i = end + 1;
+      i = end;
     }
+    Db::instance()->print_declarations();
     return 1;
   }
 
@@ -141,10 +142,10 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     auto word_end = tbuff->word_end(pos);
 
     if (word_end > word_st) {
-      auto prefix = tbuff->text_range(word_st, word_end);
+      auto search_string = tbuff->text_range(word_st, word_end);
       std::vector<std::string> suggestions;
 
-      auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(prefix);
+      auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
       if (!startsWithSuggestions.empty()) {
         printf("Did you mean: ");
         for (auto &d: startsWithSuggestions) {
@@ -153,7 +154,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
         printf("\n");
         suggestions = startsWithSuggestions;
       } else {
-        auto containsSuggestions = Db::instance()->get_declarations_containing(prefix);
+        auto containsSuggestions = Db::instance()->get_declarations_containing(search_string);
         if (!containsSuggestions.empty()) {
           printf("Did you mean: ");
           for (auto &d: containsSuggestions) {

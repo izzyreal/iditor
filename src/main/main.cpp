@@ -33,7 +33,7 @@ int main()
   
   Fl::scrollbar_size(8);
   
-  auto* win = new Fl_Window(500, 100, 600, 700, "Editor");
+  auto* win = new Fl_Window(500, 100, 600, 700, "iditor");
 
   auto editor = new Editor(0, 0, win->w(), win->h());
   editor->text("class Foo { int x = 42; };\n");

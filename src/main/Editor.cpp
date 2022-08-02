@@ -1,9 +1,8 @@
 #include "Editor.h"
 
-#include <string>
-#include <algorithm>
 #include "IditorUtil.h"
 #include "Preproc.h"
+#include "Db.h"
 
 extern "C" {
 TSLanguage *tree_sitter_cpp();
@@ -19,11 +18,11 @@ Editor::Editor(int X, int Y, int W, int H) : Fl_Text_Editor(X, Y, W, H)
   ts_parser_set_language(parser, tree_sitter_cpp());
 
   static const Fl_Text_Editor::Style_Table_Entry stable[] = {
-      {FL_GRAY,       test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_GREEN, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_CYAN,  test_font, 12, ATTR_BGCOLOR},
+      {FL_GRAY,         test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_GREEN,   test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_CYAN,    test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_YELLOW,  test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_MAGENTA,  test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
   };
 
   tbuff = new Fl_Text_Buffer();
@@ -67,11 +66,25 @@ Editor::~Editor()
 
 int Editor::handle(int event)
 {
+  if (event == FL_KEYBOARD && Fl::event_ctrl() && Fl::event_key() == FL_BackSpace) {
+    for (int i = 0; i < tbuff->length(); i++) {
+      while (tbuff->is_word_separator(i) && i < tbuff->length()) i++;
+      if (i >= tbuff->length()) break;
+      auto st = tbuff->word_start(i);
+      auto end = tbuff->word_end(i);
+      auto word = tbuff->text_range(st, end);
+      Db::instance()->insert_declaration(word, "");
+      i = end + 1;
+    }
+    return 1;
+  }
+
   auto result = Fl_Text_Editor::handle(event);
 
   if (event == FL_KEYBOARD) {
     int key = Fl::event_key();
     switch (key) {
+      case FL_BackSpace:
       case FL_LEFT_MOUSE:
       case FL_Up:
       case FL_Down:
@@ -104,6 +117,26 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     Fl::remove_timeout(Editor::blinkCursor);
     cursor_style(SIMPLE_CURSOR);
     Fl::add_timeout(0.5, Editor::blinkCursor, this);
+    auto word_st = tbuff->word_start(pos);
+    auto word_end = tbuff->word_end(pos);
+    auto prefix = tbuff->text_range(word_st, word_end);
+    auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(prefix);
+    if (!startsWithSuggestions.empty()) {
+      printf("Did you mean: ");
+      for (auto &d: startsWithSuggestions) {
+        printf("%s ", d.c_str());
+      }
+      printf("\n");
+    } else {
+      auto containsSuggestions = Db::instance()->get_declarations_containing(prefix);
+      if (!containsSuggestions.empty()) {
+        printf("Did you mean: ");
+        for (auto &d: containsSuggestions) {
+          printf("%s ", d.c_str());
+        }
+        printf("\n");
+      }
+    }
   }
 
   const char *source_code = tbuff->text();
@@ -123,7 +156,9 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     return;
   }
 
-  std::vector<std::string> keywords{"extern", "auto", "sizeof", "switch", "case", "static", "const", "new", "for", "if", "else", "void", "int", "bool", "long", "float", "struct", "short", "unsigned", "class"};
+  std::vector<std::string> keywords{"extern", "auto", "sizeof", "switch", "case", "static", "const", "new", "for", "if",
+                                    "else", "void", "int", "bool", "long", "float", "struct", "short", "unsigned",
+                                    "class"};
   std::string text = tbuff->text();
 
   auto highlight = [&](TSNode n) {
@@ -139,16 +174,11 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
       auto t = ts_node_type(n);
       std::string style = "A";
 
-      if (std::string(t).find("identifier") != std::string::npos)
-      {
+      if (std::string(t).find("identifier") != std::string::npos) {
         style = "C";
-      }
-      else if (strcmp(t, "number_literal") == 0)
-      {
+      } else if (strcmp(t, "number_literal") == 0) {
         style = "D";
-      }
-      else if (strcmp(t, "#include") == 0)
-      {
+      } else if (strcmp(t, "#include") == 0) {
         style = "E";
       }
 
@@ -174,16 +204,14 @@ void Editor::load_font()
 {
   auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
   loaded_font = i_load_private_font(font_file.c_str());
-  if (loaded_font)
-  {
+  if (loaded_font) {
     Fl::set_font(test_font, "SF Mono Regular");
   }
 }
 
 void Editor::unload_font()
 {
-  if (loaded_font)
-  {
+  if (loaded_font) {
     auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
     v_unload_private_font(font_file.c_str());
   }

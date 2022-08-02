@@ -29,12 +29,19 @@ CPMAddPackage(
         DOWNLOAD_ONLY YES
 )
 
+CPMAddPackage(
+        NAME sqlite
+        GIT_TAG master
+        GITHUB_REPOSITORY alex85k/sqlite3-cmake
+)
+
 add_executable(iditor
         src/main/main.cpp
         src/main/Editor.cpp
         src/main/Preproc.cpp
         src/main/Include.cpp
         src/main/Globals.cpp
+        src/main/Db.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc
@@ -47,7 +54,7 @@ target_include_directories(iditor PUBLIC ${tree-sitter_SOURCE_DIR}/lib/src ${tre
 
 target_link_directories(iditor PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(iditor PUBLIC fltk)
+target_link_libraries(iditor PUBLIC fltk sqlite3)
 
 if (APPLE)
     target_link_libraries(iditor PUBLIC "-framework Cocoa -framework Foundation")

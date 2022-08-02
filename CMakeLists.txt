@@ -42,6 +42,7 @@ add_executable(iditor
         src/main/Include.cpp
         src/main/Globals.cpp
         src/main/Db.cpp
+        src/main/iditor_tokenizer.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc

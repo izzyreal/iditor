@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FL/Fl_Text_Editor.H>
+#include <FL/Fl_Hold_Browser.H>
 
 #include <tree_sitter/api.h>
 
@@ -57,7 +58,7 @@ static void v_unload_private_font(const char *pf)
 
 class Editor : public Fl_Text_Editor {
 public:
-  Editor(int X, int Y, int W, int H);
+  Editor(int X, int Y, int W, int H, Fl_Hold_Browser* brow);
   ~Editor() override;
 
   int handle(int event) override;
@@ -70,7 +71,7 @@ public:
 private:
   Fl_Text_Buffer *tbuff;
   Fl_Text_Buffer *sbuff;
-
+  Fl_Hold_Browser *brow;
   std::vector<std::string> preprocessorDefinitions;
 
   TSParser *parser = ts_parser_new();

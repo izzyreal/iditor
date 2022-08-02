@@ -23,6 +23,12 @@ void write_rc_file_to_run_dir(const std::string& path)
   myfile.close();
 }
 
+void HoldBrowserCallback(Fl_Widget *w, void *data) {
+  Fl_Hold_Browser *brow = (Fl_Hold_Browser*)w;
+  int line = brow->value();
+  printf("[hold browser] item %d picked: %s\n", line, brow->text(line));
+}
+
 int main()
 {
   write_rc_file_to_run_dir("SF-Mono-Regular.otf");
@@ -35,10 +41,21 @@ int main()
   
   auto* win = new Fl_Window(500, 100, 600, 700, "iditor");
 
-  auto editor = new Editor(0, 0, win->w(), win->h());
-  editor->text("class Foo { int x = 42; };\n");
-  win->resizable(editor);
+  auto brow = new Fl_Hold_Browser(10, win->h()- 100, win->w()-20, win->h(), "Suggestions");
+  brow->callback(HoldBrowserCallback);
+  brow->color(FL_BLACK);
+  brow->color2(FL_GRAY);
+  brow->selection_color(FL_BLUE);
+  brow->textcolor(FL_GRAY);
+  brow->box(FL_NO_BOX);
+  brow->textsize(12);
+  win->add(brow);
   win->show();
+
+  auto editor = new Editor(0, 0, win->w(), win->h() - 100, brow);
+  editor->text("class Foo { int x = 42; };\n");
+  win->add(editor);
+  win->resizable(editor);
 
   auto result = Fl::run();
   return result;

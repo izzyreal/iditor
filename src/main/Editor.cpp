@@ -8,12 +8,16 @@ extern "C" {
 TSLanguage *tree_sitter_cpp();
 }
 
-Editor::Editor(int X, int Y, int W, int H) : Fl_Text_Editor(X, Y, W, H)
+Editor::Editor(int X, int Y, int W, int H, Fl_Hold_Browser *brow) : Fl_Text_Editor(X, Y, W, H)
 {
+  load_font();
+
+  this->brow = brow;
+
+  brow->textfont(test_font);
+
   mVScrollBar->color(FL_BLACK);
   mHScrollBar->color(FL_BLACK);
-
-  load_font();
 
   ts_parser_set_language(parser, tree_sitter_cpp());
 
@@ -117,26 +121,6 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     Fl::remove_timeout(Editor::blinkCursor);
     cursor_style(SIMPLE_CURSOR);
     Fl::add_timeout(0.5, Editor::blinkCursor, this);
-    auto word_st = tbuff->word_start(pos);
-    auto word_end = tbuff->word_end(pos);
-    auto prefix = tbuff->text_range(word_st, word_end);
-    auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(prefix);
-    if (!startsWithSuggestions.empty()) {
-      printf("Did you mean: ");
-      for (auto &d: startsWithSuggestions) {
-        printf("%s ", d.c_str());
-      }
-      printf("\n");
-    } else {
-      auto containsSuggestions = Db::instance()->get_declarations_containing(prefix);
-      if (!containsSuggestions.empty()) {
-        printf("Did you mean: ");
-        for (auto &d: containsSuggestions) {
-          printf("%s ", d.c_str());
-        }
-        printf("\n");
-      }
-    }
   }
 
   const char *source_code = tbuff->text();
@@ -151,6 +135,48 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
   char *string = ts_node_string(root_node);
 //  printf("Syntax tree: %s\n", string);
   free(string);
+
+  if (nDeleted > 0 || nInserted > 0) {
+    auto word_st = tbuff->word_start(pos + (nDeleted > 0 ? -1 : 0));
+    auto word_end = tbuff->word_end(pos);
+
+    if (word_end > word_st) {
+      auto prefix = tbuff->text_range(word_st, word_end);
+      std::vector<std::string> suggestions;
+
+      auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(prefix);
+      if (!startsWithSuggestions.empty()) {
+        printf("Did you mean: ");
+        for (auto &d: startsWithSuggestions) {
+          printf("%s ", d.c_str());
+        }
+        printf("\n");
+        suggestions = startsWithSuggestions;
+      } else {
+        auto containsSuggestions = Db::instance()->get_declarations_containing(prefix);
+        if (!containsSuggestions.empty()) {
+          printf("Did you mean: ");
+          for (auto &d: containsSuggestions) {
+            printf("%s ", d.c_str());
+          }
+          printf("\n");
+          suggestions = containsSuggestions;
+        }
+      }
+
+      brow->clear();
+
+      if (!suggestions.empty()) {
+        for (auto &s: suggestions)
+          brow->add(s.c_str());
+        brow->select(1);
+      }
+    }
+  }
+  else
+  {
+    brow->clear();
+  }
 
   if (nDeleted > 0) {
     return;

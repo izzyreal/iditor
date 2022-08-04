@@ -81,6 +81,14 @@ int Editor::handle(int event)
     return 1;
   }
 
+  if (event == FL_ENTER)
+  {
+    // Maybe on Windows we need to show_cursor. See Fl_Text_Editor.cxx implementation.
+    // Try it on Windows without and check if really necessary.
+    show_cursor(mCursorOn);
+    return 1;
+  }
+
   auto result = Fl_Text_Editor::handle(event);
 
   if (event == FL_LEFT_MOUSE) {

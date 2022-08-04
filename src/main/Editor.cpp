@@ -86,6 +86,41 @@ int Editor::handle(int event)
     return 1;
   }
 
+  if (browser_items.size() > 0 && event == FL_KEYBOARD) {
+    if (Fl::event_key() == FL_Up || Fl::event_key() == FL_Down)
+    {
+      return browser->handle(event);
+    }
+
+    if (Fl::event_key() == FL_Left || Fl::event_key() == FL_Right)
+    {
+      hide_browser();
+    }
+
+    if (Fl::event_key() == FL_Enter)
+    {
+      auto word_st = tbuff->word_start(insert_position() - 1);
+      auto word_end = tbuff->word_end(insert_position() - 1);
+
+      auto suggestion_word = browser_items[browser->value() - 1];
+
+      auto len = word_end - word_st;
+
+      if (len < suggestion_word.length())
+      {
+        tbuff->replace(word_st, word_end, suggestion_word.substr(0, len).c_str());
+        mCursorPos += len;
+        insert(suggestion_word.substr(len).c_str());
+        set_changed();
+        if (when()&FL_WHEN_CHANGED) do_callback();
+      }
+
+      hide_browser();
+      restart_blink_timer();
+      return 1;
+    }
+  }
+
   auto result = Fl_Text_Editor::handle(event);
 
   if (event == FL_LEFT_MOUSE)
@@ -152,8 +187,6 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
     if (word_end > word_st) {
       auto search_string = tbuff->text_range(word_st, word_end);
-      browser_items.clear();
-
       auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
       if (!startsWithSuggestions.empty()) {
         printf("Did you mean: ");

@@ -46,13 +46,8 @@ Editor::Editor(int X, int Y, int W, int H)
 void Editor::blinkCursor(void *data)
 {
   auto editor = (Editor *) data;
-  editor->cursorOn = !editor->cursorOn;
+  editor->mCursorOn = editor->mCursorOn == 0 ? 1 : 0;
 
-  if (editor->cursorOn) {
-    editor->cursor_style(SIMPLE_CURSOR);
-  } else {
-    editor->cursor_style(DIM_CURSOR);
-  }
   editor->redraw();
   editor->browser->redraw();
   Fl::repeat_timeout(0.5, blinkCursor, data);
@@ -83,18 +78,19 @@ int Editor::handle(int event)
 
   if (event == FL_ENTER)
   {
-    // Maybe on Windows we need to show_cursor. See Fl_Text_Editor.cxx implementation.
-    // Try it on Windows without and check if really necessary.
+    // Maybe on Windows we need to show_cursor and therefor also browser->redraw.
+    // See Fl_Text_Editor.cxx implementation for the origin of this comment.
+    // Try it on Windows without and check if either statement is really necessary.
     show_cursor(mCursorOn);
+    browser->redraw();
     return 1;
   }
 
   auto result = Fl_Text_Editor::handle(event);
 
-  if (event == FL_LEFT_MOUSE) {
-    Fl::remove_timeout(Editor::blinkCursor);
-    cursor_style(SIMPLE_CURSOR);
-    Fl::add_timeout(0.5, Editor::blinkCursor, this);
+  if (event == FL_LEFT_MOUSE)
+  {
+    restart_blink_timer();
     hide_browser();
   }
 
@@ -116,9 +112,7 @@ int Editor::handle(int event)
       case FL_End:
       case FL_Page_Up:
       case FL_Page_Down: {
-        Fl::remove_timeout(Editor::blinkCursor);
-        cursor_style(SIMPLE_CURSOR);
-        Fl::add_timeout(0.5, Editor::blinkCursor, this);
+        restart_blink_timer();
         break;
       }
       default:
@@ -136,9 +130,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
   }
 
   if (nInserted > 0) {
-    Fl::remove_timeout(Editor::blinkCursor);
-    cursor_style(SIMPLE_CURSOR);
-    Fl::add_timeout(0.5, Editor::blinkCursor, this);
+    restart_blink_timer();
   }
 
   const char *source_code = tbuff->text();
@@ -295,4 +287,10 @@ void Editor::hide_browser()
   browser_items.clear();
   browser->hide();
   redraw();
+}
+void Editor::restart_blink_timer()
+{
+  Fl::remove_timeout(Editor::blinkCursor);
+  mCursorOn = 1;
+  Fl::add_timeout(0.5, Editor::blinkCursor, this);
 }

@@ -83,12 +83,11 @@ private:
   int loaded_font = 0;
   Fl_Font test_font = (FL_FREE_FONT);
 
-  bool cursorOn = true;
-
   void show_browser();
   void hide_browser();
 
-  static void blinkCursor(void *cursorOn);
+  void restart_blink_timer();
+  static void blinkCursor(void* data);
 
   void load_font();
 

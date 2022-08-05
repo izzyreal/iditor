@@ -96,7 +96,8 @@ int Editor::handle(int event)
     return 1;
   }
 
-  if (browser_items.size() > 0 && event == FL_KEYBOARD) {
+  if (browser_items.size() > 0 && event == FL_KEYBOARD)
+  {
     if (Fl::event_key() == FL_Up || Fl::event_key() == FL_Down)
     {
       return browser->handle(event);
@@ -109,21 +110,22 @@ int Editor::handle(int event)
 
     if (Fl::event_key() == FL_Enter)
     {
-      auto word_st = tbuff->word_start(insert_position() - 1);
-      auto word_end = tbuff->word_end(insert_position() - 1);
+      auto word_st = tbuff->word_start(insert_position());
+      auto word_end = tbuff->word_end(insert_position());
+
+      if (word_st == word_end)
+      {
+        word_st = tbuff->word_start(insert_position() - 1);
+        word_end = tbuff->word_end(insert_position() -1);
+      }
+
+      tbuff->remove(word_st, word_end);
 
       auto suggestion_word = browser_items[browser->value() - 1];
 
-      auto len = word_end - word_st;
-
-      if (len < suggestion_word.length())
-      {
-        tbuff->replace(word_st, word_end, suggestion_word.substr(0, len).c_str());
-        mCursorPos += len;
-        insert(suggestion_word.substr(len).c_str());
-        set_changed();
-        if (when()&FL_WHEN_CHANGED) do_callback();
-      }
+      insert(suggestion_word.c_str());
+      set_changed();
+      if (when()&FL_WHEN_CHANGED) do_callback();
 
       hide_browser();
       restart_blink_timer();

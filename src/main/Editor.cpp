@@ -195,7 +195,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   if (nDeleted > 0 || nInserted > 0)
   {
-    populate_and_show_suggestions(pos, nDeleted, nInserted);
+    populate_and_show_suggestions(pos, nDeleted);
   }
 
   if (browser_items.empty())
@@ -334,7 +334,7 @@ void Editor::restart_blink_timer()
   mCursorOn = 1;
   Fl::add_timeout(0.5, Editor::blinkCursor, this);
 }
-void Editor::populate_and_show_suggestions(int new_pos, int nDeleted, int nInserted)
+void Editor::populate_and_show_suggestions(int new_pos, int nDeleted)
 {
   browser_items.clear();
 

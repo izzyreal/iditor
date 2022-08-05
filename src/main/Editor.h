@@ -85,7 +85,7 @@ private:
 
   void show_browser();
   void hide_browser();
-  void populate_and_show_suggestions(int new_pos, int nDeleted, int nInserted);
+  void populate_and_show_suggestions(int new_pos, int nDeleted);
 
   void restart_blink_timer();
   static void blinkCursor(void* data);

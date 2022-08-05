@@ -30,8 +30,20 @@ void HoldBrowserCallback(Fl_Widget *w, void *data) {
   printf("[hold browser] item %d picked: %s\n", line, brow->text(line));
 }
 
+int escKeyConsumer(int event)
+{
+  if (event == FL_SHORTCUT && Fl::event_key() == FL_Escape)
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
 int main()
 {
+  Fl::add_handler(escKeyConsumer);
+
   write_rc_file_to_run_dir("SF-Mono-Regular.otf");
   
   Globals::includeDirectories.emplace(

@@ -62,10 +62,20 @@ Editor::~Editor()
 
 int Editor::handle(int event)
 {
-  if (event == FL_KEYBOARD && Fl::event_ctrl() && Fl::event_key() == FL_BackSpace) {
-    for (int i = 0; i < tbuff->length(); i++) {
-      while (tbuff->is_word_separator(i) && i < tbuff->length()) i++;
-      if (i >= tbuff->length()) break;
+  if (event == FL_KEYBOARD && Fl::event_ctrl() && Fl::event_key() == FL_BackSpace)
+  {
+    for (int i = 0; i < tbuff->length(); i++)
+    {
+      while (tbuff->is_word_separator(i) && i < tbuff->length())
+      {
+        i++;
+      }
+
+      if (i >= tbuff->length())
+      {
+        break;
+      }
+
       auto st = tbuff->word_start(i);
       auto end = tbuff->word_end(i);
       auto word = tbuff->text_range(st, end);
@@ -160,11 +170,13 @@ int Editor::handle(int event)
 
 void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *)
 {
-  if (nDeleted > 0) {
+  if (nDeleted > 0)
+  {
     sbuff->remove(pos, pos + nDeleted);
   }
 
-  if (nInserted > 0) {
+  if (nInserted > 0)
+  {
     restart_blink_timer();
   }
 
@@ -176,47 +188,52 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   tree = ts_parser_parse_string(parser, nullptr, preprocessed.c_str(), strlen(preprocessed.c_str()));
 
-  TSNode root_node = ts_tree_root_node(tree);
-  char *string = ts_node_string(root_node);
-//  printf("Syntax tree: %s\n", string);
-  free(string);
-
-  if (nDeleted > 0 || nInserted > 0) {
+  if (nDeleted > 0 || nInserted > 0)
+  {
     auto word_st = tbuff->word_start(pos + (nDeleted > 0 ? -1 : 0));
     auto word_end = tbuff->word_end(pos);
 
-    if (word_end > word_st) {
+    if (word_end > word_st)
+    {
       auto search_string = tbuff->text_range(word_st, word_end);
       auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
-      if (!startsWithSuggestions.empty()) {
-        printf("Did you mean: ");
-        for (auto &d: startsWithSuggestions) {
-          printf("%s ", d.c_str());
-        }
-        printf("\n");
+
+      if (!startsWithSuggestions.empty())
+      {
         browser_items = startsWithSuggestions;
-      } else {
+      }
+      else
+      {
         auto containsSuggestions = Db::instance()->get_declarations_containing(search_string);
-        if (!containsSuggestions.empty()) {
-          printf("Did you mean: ");
-          for (auto &d: containsSuggestions) {
-            printf("%s ", d.c_str());
-          }
-          printf("\n");
+
+        if (!containsSuggestions.empty())
+        {
           browser_items = containsSuggestions;
         }
       }
 
-      if (!browser_items.empty()) {
+      if (!browser_items.empty())
+      {
         show_browser();
-      } else {
+      }
+      else
+      {
         hide_browser();
       }
-    } else {
+    }
+    else
+    {
       hide_browser();
     }
-  } else {
+  }
+  else
+  {
     hide_browser();
+  }
+
+  if (browser_items.empty() && !browser->size() == 0)
+  {
+//    hide_browser();
   }
 
   if (nDeleted > 0) {
@@ -233,38 +250,56 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     auto end = ts_node_end_byte(n);
     auto node_text = IditorUtil::getNodeText(n, text);
 
-    if (std::find(keywords.begin(), keywords.end(), node_text) != keywords.end()) {
-      for (int i = st; i < end; i++) {
+    if (std::find(keywords.begin(), keywords.end(), node_text) != keywords.end())
+    {
+      for (int i = st; i < end; i++)
+      {
         sbuff->replace(i, i + 1, "B");
       }
-    } else {
+    }
+    else
+    {
       auto t = ts_node_type(n);
       std::string style = "A";
 
-      if (std::string(t).find("identifier") != std::string::npos) {
+      if (std::string(t).find("identifier") != std::string::npos)
+      {
         style = "C";
-      } else if (strcmp(t, "number_literal") == 0) {
+      }
+      else if (strcmp(t, "number_literal") == 0)
+      {
         style = "D";
-      } else if (strcmp(t, "#include") == 0) {
+      }
+      else if (strcmp(t, "#include") == 0)
+      {
         style = "E";
       }
 
       for (int i = st; i < end; i++)
+      {
         sbuff->replace(i, i + 1, style.c_str());
+      }
     }
   };
 
-  if (nDeleted == 0 && nInserted == 0) return;
+  if (nDeleted == 0 && nInserted == 0)
+  {
+    return;
+  }
 
   std::vector<TSNode> leaf_nodes;
   auto text_tree = ts_parser_parse_string(parser, nullptr, text.c_str(), strlen(text.c_str()));
   IditorUtil::collectLeafNodes(ts_tree_root_node(text_tree), leaf_nodes);
 
   for (int i = 0; i < text.size(); i++)
+  {
     sbuff->replace(i, i + 1, "A");
+  }
 
   for (auto &n: leaf_nodes)
+  {
     highlight(n);
+  }
 }
 
 void Editor::load_font()

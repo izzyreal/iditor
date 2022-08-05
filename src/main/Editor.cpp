@@ -96,7 +96,7 @@ int Editor::handle(int event)
     return 1;
   }
 
-  if (browser_items.size() > 0 && event == FL_KEYBOARD)
+  if (!browser_items.empty() > 0 && event == FL_KEYBOARD)
   {
     if (Fl::event_key() == FL_Up || Fl::event_key() == FL_Down)
     {
@@ -143,7 +143,7 @@ int Editor::handle(int event)
 
   if (event == FL_MOUSEWHEEL)
   {
-    if (browser_items.size() > 0)
+    if (!browser_items.empty())
       show_browser();
   }
 
@@ -198,6 +198,8 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     auto word_st = tbuff->word_start(pos + (nDeleted > 0 ? -1 : 0));
     auto word_end = tbuff->word_end(pos);
 
+    browser_items.clear();
+
     if (word_end > word_st)
     {
       auto search_string = tbuff->text_range(word_st, word_end);
@@ -221,24 +223,12 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
       {
         show_browser();
       }
-      else
-      {
-        hide_browser();
-      }
     }
-    else
-    {
-      hide_browser();
-    }
-  }
-  else
-  {
-    hide_browser();
   }
 
-  if (browser_items.empty() && !browser->size() == 0)
+  if (browser_items.empty())
   {
-//    hide_browser();
+    hide_browser();
   }
 
   if (nDeleted > 0)
@@ -252,8 +242,8 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
   std::string text = tbuff->text();
 
   auto highlight = [&](TSNode n) {
-    auto st = ts_node_start_byte(n);
-    auto end = ts_node_end_byte(n);
+    auto st = static_cast<int>(ts_node_start_byte(n));
+    auto end = static_cast<int>(ts_node_end_byte(n));
     auto node_text = IditorUtil::getNodeText(n, text);
 
     if (std::find(keywords.begin(), keywords.end(), node_text) != keywords.end())
@@ -354,7 +344,7 @@ void Editor::show_browser()
 
   if (position_to_xy(st, &X, &Y))
   {
-    browser->resize(X - 3, Y + 16, 200, browser_items.size() * 14);
+    browser->resize(X - 3, Y + 16, 200, static_cast<int>(browser_items.size()) * 14);
   }
   redraw();
   browser->redraw();

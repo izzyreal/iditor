@@ -9,7 +9,7 @@ TSLanguage *tree_sitter_cpp();
 }
 
 Editor::Editor(int X, int Y, int W, int H)
-    : Fl_Text_Editor(X, Y, W, H), browser(nullptr)
+    : EditorDraw(X, Y, W, H), browser(nullptr)
 {
   load_font();
   mVScrollBar->color(FL_BLACK);
@@ -36,7 +36,7 @@ Editor::Editor(int X, int Y, int W, int H)
 
   color(FL_BLACK);
   color2(FL_YELLOW);
-  cursor_color(FL_DARK_YELLOW);
+  cursor_color(FL_LIGHT1);
   cursor_style(SIMPLE_CURSOR);
   selection_color(FL_DARK_CYAN);
 

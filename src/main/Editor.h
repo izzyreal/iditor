@@ -1,6 +1,6 @@
 #pragma once
 
-#include <FL/Fl_Text_Editor.H>
+#include "EditorDraw.h"
 #include <FL/Fl_Hold_Browser.H>
 
 #include <tree_sitter/api.h>
@@ -56,7 +56,7 @@ static void v_unload_private_font(const char *pf)
 
 #endif
 
-class Editor : public Fl_Text_Editor {
+class Editor : public EditorDraw {
 public:
   Editor(int X, int Y, int W, int H);
   ~Editor() override;

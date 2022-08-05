@@ -113,7 +113,7 @@ int Editor::handle(int event)
       auto word_st = tbuff->word_start(insert_position());
       auto word_end = tbuff->word_end(insert_position());
 
-      if (word_st == word_end)
+      if (word_st == word_end || word_st > word_end)
       {
         word_st = tbuff->word_start(insert_position() - 1);
         word_end = tbuff->word_end(insert_position() - 1);
@@ -195,35 +195,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   if (nDeleted > 0 || nInserted > 0)
   {
-    auto word_st = tbuff->word_start(pos + (nDeleted > 0 ? -1 : 0));
-    auto word_end = tbuff->word_end(pos);
-
-    browser_items.clear();
-
-    if (word_end > word_st)
-    {
-      auto search_string = tbuff->text_range(word_st, word_end);
-      auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
-
-      if (!startsWithSuggestions.empty())
-      {
-        browser_items = startsWithSuggestions;
-      }
-      else
-      {
-        auto containsSuggestions = Db::instance()->get_declarations_containing(search_string);
-
-        if (!containsSuggestions.empty())
-        {
-          browser_items = containsSuggestions;
-        }
-      }
-
-      if (!browser_items.empty())
-      {
-        show_browser();
-      }
-    }
+    populate_and_show_suggestions(pos, nDeleted, nInserted);
   }
 
   if (browser_items.empty())
@@ -361,4 +333,36 @@ void Editor::restart_blink_timer()
   Fl::remove_timeout(Editor::blinkCursor);
   mCursorOn = 1;
   Fl::add_timeout(0.5, Editor::blinkCursor, this);
+}
+void Editor::populate_and_show_suggestions(int new_pos, int nDeleted, int nInserted)
+{
+  browser_items.clear();
+
+  auto word_st = tbuff->word_start(new_pos + (nDeleted > 0 ? -1 : 0));
+  auto word_end = tbuff->word_end(new_pos);
+
+  if (word_end > word_st)
+  {
+    auto search_string = tbuff->text_range(word_st, word_end);
+    auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
+
+    if (!startsWithSuggestions.empty())
+    {
+      browser_items = startsWithSuggestions;
+    }
+    else
+    {
+      auto containsSuggestions = Db::instance()->get_declarations_containing(search_string);
+
+      if (!containsSuggestions.empty())
+      {
+        browser_items = containsSuggestions;
+      }
+    }
+
+    if (!browser_items.empty())
+    {
+      show_browser();
+    }
+  }
 }

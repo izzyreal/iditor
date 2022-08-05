@@ -116,7 +116,7 @@ int Editor::handle(int event)
       if (word_st == word_end)
       {
         word_st = tbuff->word_start(insert_position() - 1);
-        word_end = tbuff->word_end(insert_position() -1);
+        word_end = tbuff->word_end(insert_position() - 1);
       }
 
       tbuff->remove(word_st, word_end);
@@ -125,7 +125,7 @@ int Editor::handle(int event)
 
       insert(suggestion_word.c_str());
       set_changed();
-      if (when()&FL_WHEN_CHANGED) do_callback();
+      if (when() & FL_WHEN_CHANGED) do_callback();
 
       hide_browser();
       restart_blink_timer();
@@ -147,9 +147,11 @@ int Editor::handle(int event)
       show_browser();
   }
 
-  if (event == FL_KEYBOARD) {
+  if (event == FL_KEYBOARD)
+  {
     int key = Fl::event_key();
-    switch (key) {
+    switch (key)
+    {
       case FL_BackSpace:
       case FL_Up:
       case FL_Down:
@@ -158,7 +160,8 @@ int Editor::handle(int event)
       case FL_Home:
       case FL_End:
       case FL_Page_Up:
-      case FL_Page_Down: {
+      case FL_Page_Down:
+      {
         restart_blink_timer();
         break;
       }
@@ -238,7 +241,8 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 //    hide_browser();
   }
 
-  if (nDeleted > 0) {
+  if (nDeleted > 0)
+  {
     return;
   }
 
@@ -308,14 +312,16 @@ void Editor::load_font()
 {
   auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
   loaded_font = i_load_private_font(font_file.c_str());
-  if (loaded_font) {
+  if (loaded_font)
+  {
     Fl::set_font(test_font, "SF Mono Regular");
   }
 }
 
 void Editor::unload_font()
 {
-  if (loaded_font) {
+  if (loaded_font)
+  {
     auto font_file = std::filesystem::current_path().append("SF-Mono-Regular.otf");
     v_unload_private_font(font_file.c_str());
   }
@@ -340,12 +346,14 @@ void Editor::show_browser()
 
   browser->clear();
 
-  for (auto &s: browser_items) {
+  for (auto &s: browser_items)
+  {
     browser->add(s.c_str());
   }
   browser->select(1);
 
-  if (position_to_xy(st, &X, &Y)) {
+  if (position_to_xy(st, &X, &Y))
+  {
     browser->resize(X - 3, Y + 16, 200, browser_items.size() * 14);
   }
   redraw();

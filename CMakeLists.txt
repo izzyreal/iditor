@@ -39,6 +39,7 @@ add_executable(iditor
         src/main/main.cpp
         src/main/Editor.cpp
         src/main/EditorDraw.cpp
+        src/main/Highlighter.cpp
         src/main/Preproc.cpp
         src/main/Include.cpp
         src/main/Globals.cpp

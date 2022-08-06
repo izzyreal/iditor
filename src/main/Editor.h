@@ -65,14 +65,9 @@ public:
 
   void setBrowser(Fl_Hold_Browser* browser);
 
-  void text(const char *val)
-  {
-    tbuff->text(val);
-  }
+  void text(const char *val);
 
 private:
-  Fl_Text_Buffer *tbuff;
-  Fl_Text_Buffer *sbuff;
   Fl_Hold_Browser *browser;
   std::vector<std::string> preprocessorDefinitions;
   std::vector<std::string> browser_items;
@@ -81,11 +76,14 @@ private:
   TSTree *tree = nullptr;
 
   int loaded_font = 0;
+  int sel_st = 0;
+  int sel_end = 0;
   Fl_Font test_font = (FL_FREE_FONT);
 
   void show_browser();
   void hide_browser();
   void populate_and_show_suggestions(int new_pos, int nDeleted);
+  void reparse_edit2(int old_st, int old_end, int new_end);
 
   void restart_blink_timer();
   static void blinkCursor(void* data);

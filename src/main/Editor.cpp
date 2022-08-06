@@ -8,6 +8,14 @@ extern "C" {
 TSLanguage *tree_sitter_cpp();
 }
 
+const char *tsinput_read_function(void *payload, uint32_t byte_index, TSPoint /*position*/, uint32_t *bytes_read)
+{
+  auto tbuff = (Fl_Text_Buffer *) payload;
+  auto res = tbuff->text_range((int) byte_index, (int) tbuff->length());
+  *bytes_read = tbuff->length() - byte_index;
+  return res;
+}
+
 Editor::Editor(int X, int Y, int W, int H)
     : EditorDraw(X, Y, W, H), browser(nullptr)
 {
@@ -25,14 +33,12 @@ Editor::Editor(int X, int Y, int W, int H)
       {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
   };
 
-  tbuff = new Fl_Text_Buffer();
-  sbuff = new Fl_Text_Buffer();
-
-  buffer(tbuff);
+  mStyleBuffer = new Fl_Text_Buffer();
+  buffer(new Fl_Text_Buffer());
 
   int stable_size = sizeof(stable) / sizeof(stable[0]);
-  highlight_data(sbuff, stable, stable_size, 'A', nullptr, nullptr);
-  tbuff->add_modify_callback(ModifyCallback_STATIC, (void *) this);
+  highlight_data(style_buffer(), stable, stable_size, 'A', nullptr, nullptr);
+  buffer()->add_modify_callback(ModifyCallback_STATIC, (void *) this);
 
   color(FL_BLACK);
   color2(FL_YELLOW);
@@ -41,7 +47,10 @@ Editor::Editor(int X, int Y, int W, int H)
   selection_color(FL_DARK_CYAN);
 
   Fl::add_timeout(0.5, Editor::blinkCursor, this);
+
+  tree = ts_parser_parse_string(parser, nullptr, "", 0);
 }
+
 
 void Editor::blinkCursor(void *data)
 {
@@ -62,23 +71,25 @@ Editor::~Editor()
 
 int Editor::handle(int event)
 {
+  buffer()->primary_selection()->position(&sel_st, &sel_end);
+
   if (event == FL_KEYBOARD && Fl::event_ctrl() && Fl::event_key() == FL_BackSpace)
   {
-    for (int i = 0; i < tbuff->length(); i++)
+    for (int i = 0; i < buffer()->length(); i++)
     {
-      while (tbuff->is_word_separator(i) && i < tbuff->length())
+      while (buffer()->is_word_separator(i) && i < buffer()->length())
       {
         i++;
       }
 
-      if (i >= tbuff->length())
+      if (i >= buffer()->length())
       {
         break;
       }
 
-      auto st = tbuff->word_start(i);
-      auto end = tbuff->word_end(i);
-      auto word = tbuff->text_range(st, end);
+      auto st = buffer()->word_start(i);
+      auto end = buffer()->word_end(i);
+      auto word = buffer()->text_range(st, end);
       Db::instance()->insert_declaration(word, "");
       i = end;
     }
@@ -110,16 +121,16 @@ int Editor::handle(int event)
 
     if (Fl::event_key() == FL_Enter)
     {
-      auto word_st = tbuff->word_start(insert_position());
-      auto word_end = tbuff->word_end(insert_position());
+      auto word_st = buffer()->word_start(insert_position());
+      auto word_end = buffer()->word_end(insert_position());
 
       if (word_st == word_end || word_st > word_end)
       {
-        word_st = tbuff->word_start(insert_position() - 1);
-        word_end = tbuff->word_end(insert_position() - 1);
+        word_st = buffer()->word_start(insert_position() - 1);
+        word_end = buffer()->word_end(insert_position() - 1);
       }
 
-      tbuff->remove(word_st, word_end);
+      buffer()->remove(word_st, word_end);
 
       auto suggestion_word = browser_items[browser->value() - 1];
 
@@ -177,7 +188,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 {
   if (nDeleted > 0)
   {
-    sbuff->remove(pos, pos + nDeleted);
+    style_buffer()->remove(pos, pos + nDeleted);
   }
 
   if (nInserted > 0)
@@ -185,17 +196,20 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     restart_blink_timer();
   }
 
-  const char *source_code = tbuff->text();
-
-//  auto preprocessed = Preproc().getPreprocessed(source_code, "/Users/izmar.verhage/git/iditor/inctest");
-
-  std::string preprocessed = source_code;
-
-  tree = ts_parser_parse_string(parser, nullptr, preprocessed.c_str(), strlen(preprocessed.c_str()));
-
   if (nDeleted > 0 || nInserted > 0)
   {
     populate_and_show_suggestions(pos, nDeleted);
+
+    if (sel_st == sel_end) sel_st = sel_end = mCursorPos;
+
+    auto edit_st = sel_st;
+    auto edit_old_end = sel_end;
+    auto edit_new_end = (edit_st + nInserted) - nDeleted;
+
+    reparse_edit(edit_st, edit_old_end, edit_new_end);
+
+    sel_st = 0;
+    sel_end = 0;
   }
 
   if (browser_items.empty())
@@ -211,7 +225,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
   std::vector<std::string> keywords{"extern", "auto", "sizeof", "switch", "case", "static", "const", "new", "for", "if",
                                     "else", "void", "int", "bool", "long", "float", "struct", "short", "unsigned",
                                     "class"};
-  std::string text = tbuff->text();
+  std::string text = buffer()->text();
 
   auto highlight = [&](TSNode n) {
     auto st = static_cast<int>(ts_node_start_byte(n));
@@ -222,7 +236,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     {
       for (int i = st; i < end; i++)
       {
-        sbuff->replace(i, i + 1, "B");
+        style_buffer()->replace(i, i + 1, "B");
       }
     }
     else
@@ -245,7 +259,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
       for (int i = st; i < end; i++)
       {
-        sbuff->replace(i, i + 1, style.c_str());
+        style_buffer()->replace(i, i + 1, style.c_str());
       }
     }
   };
@@ -261,7 +275,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
   for (int i = 0; i < text.size(); i++)
   {
-    sbuff->replace(i, i + 1, "A");
+    style_buffer()->replace(i, i + 1, "A");
   }
 
   for (auto &n: leaf_nodes)
@@ -301,10 +315,10 @@ void Editor::show_browser()
   browser->show();
   int X = 0, Y = 0;
 
-  auto st = tbuff->word_start(mCursorPos);
-  auto end = tbuff->word_start(mCursorPos);
+  auto st = buffer()->word_start(mCursorPos);
+  auto end = buffer()->word_start(mCursorPos);
 
-  if (st > mCursorPos || st == end) st = tbuff->word_start(mCursorPos - 1);
+  if (st > mCursorPos || st == end) st = buffer()->word_start(mCursorPos - 1);
 
   browser->clear();
 
@@ -338,12 +352,12 @@ void Editor::populate_and_show_suggestions(int new_pos, int nDeleted)
 {
   browser_items.clear();
 
-  auto word_st = tbuff->word_start(new_pos + (nDeleted > 0 ? -1 : 0));
-  auto word_end = tbuff->word_end(new_pos);
+  auto word_st = buffer()->word_start(new_pos + (nDeleted > 0 ? -1 : 0));
+  auto word_end = buffer()->word_end(new_pos);
 
   if (word_end > word_st)
   {
-    auto search_string = tbuff->text_range(word_st, word_end);
+    auto search_string = buffer()->text_range(word_st, word_end);
     auto startsWithSuggestions = Db::instance()->get_declarations_starting_with(search_string);
 
     if (!startsWithSuggestions.empty())
@@ -365,4 +379,21 @@ void Editor::populate_and_show_suggestions(int new_pos, int nDeleted)
       show_browser();
     }
   }
+}
+
+void Editor::text(const char *val)
+{
+  buffer()->text(val);
+}
+
+void Editor::reparse_edit(int st, int old_end, int new_end)
+{
+  TSInputEdit edit{(uint32_t) st, (uint32_t) old_end, (uint32_t) new_end};
+  ts_tree_edit(tree, &edit);
+
+  TSInput tsinput{buffer(), &tsinput_read_function, TSInputEncodingUTF8};
+  tree = ts_parser_parse(parser, tree, tsinput);
+
+  auto str = ts_node_string(ts_tree_root_node(tree));
+  printf("\nTree: %s\n", str);
 }

@@ -52,7 +52,7 @@ int main()
   
   Fl::scrollbar_size(8);
   
-  auto* win = new Fl_Window(500, 100, 600, 700, "iditor");
+  auto* win = new Fl_Window(500, 100, 600, 400, "iditor");
 
   win->begin();
 

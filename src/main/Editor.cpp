@@ -31,9 +31,9 @@ Editor::Editor(int X, int Y, int W, int H)
       {FL_DARK_CYAN,    test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_YELLOW,  test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_RED, test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
   };
 
   mStyleBuffer = new Fl_Text_Buffer();
@@ -189,13 +189,21 @@ int Editor::handle(int event)
 
 void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char* deletedText)
 {
-  if (nInserted > 0)
+  if (nDeleted > 0)
   {
-    restart_blink_timer();
+    style_buffer()->remove(pos, pos + nDeleted);
+  }
+  else if (nInserted > 0)
+  {
+    for (int i = 0; i < nInserted; i++)
+    {
+      style_buffer()->insert(pos + i, "A");
+    }
   }
 
   if (nDeleted > 0 || nInserted > 0)
   {
+    restart_blink_timer();
     populate_and_show_suggestions(pos, nDeleted);
 
     if (sel_st == sel_end) sel_st = sel_end = mCursorPos;
@@ -211,12 +219,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     sel_st = 0;
     sel_end = 0;
 
-    auto newline_was_deleted = deletedText != nullptr && strcmp(deletedText, "\n") == 0;
-
-    if (strcmp(buffer()->text_range(edit_st, edit_new_end), "\n") != 0 && !newline_was_deleted)
-    {
-      Highlighter::do_highlighting(old_tree, tree, buffer()->text(), style_buffer());
-    }
+    Highlighter::do_highlighting(old_tree, tree, buffer()->text(), style_buffer());
 
     ts_tree_delete(old_tree);
   }

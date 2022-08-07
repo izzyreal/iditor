@@ -20,14 +20,8 @@ void write_rc_file_to_run_dir(const std::string& path)
   std::ofstream myfile;
   auto cwd = std::filesystem::current_path();
   myfile.open (cwd.append(path).c_str());
-  myfile.write(data, file.size());
+  myfile.write(data, (long) file.size());
   myfile.close();
-}
-
-void HoldBrowserCallback(Fl_Widget *w, void *data) {
-  Fl_Hold_Browser *brow = (Fl_Hold_Browser*)w;
-  int line = brow->value();
-  printf("[hold browser] item %d picked: %s\n", line, brow->text(line));
 }
 
 int escKeyConsumer(int event)
@@ -57,9 +51,8 @@ int main()
   win->begin();
 
   auto editor = new Editor(0, 0, win->w(), win->h());
-  auto browser = new Fl_Hold_Browser(0, 0, 0, 0, "Suggestions");
+  auto browser = new Fl_Hold_Browser(0, 0, 0, 0);
   browser->box(FL_FLAT_BOX);
-  browser->callback(HoldBrowserCallback);
   browser->color(FL_DARK3);
   browser->color2(FL_GRAY);
   browser->selection_color(FL_BLUE);
@@ -70,7 +63,7 @@ int main()
   browser->clear_visible_focus();
   browser->hide();
   editor->setBrowser(browser);
-  editor->text("class Foo { int x = 42; };\n");
+  editor->text("class Foo { void bar(); int x = 42;};\n");
   win->add(editor);
   win->add(browser);
   win->resizable(editor);

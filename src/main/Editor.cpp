@@ -31,6 +31,9 @@ Editor::Editor(int X, int Y, int W, int H)
       {FL_DARK_CYAN,    test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_YELLOW,  test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
   };
 
   mStyleBuffer = new Fl_Text_Buffer();
@@ -186,11 +189,6 @@ int Editor::handle(int event)
 
 void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *)
 {
-  if (nDeleted > 0)
-  {
-    style_buffer()->remove(pos, pos + nDeleted);
-  }
-
   if (nInserted > 0)
   {
     restart_blink_timer();
@@ -210,17 +208,13 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
 
     sel_st = 0;
     sel_end = 0;
+
+    Highlighter::do_highlighting(tree, buffer()->text(), style_buffer());
   }
 
   if (browser_items.empty())
   {
     hide_browser();
-  }
-
-  if (nInserted > 0)
-  {
-    std::string text = buffer()->text();
-    Highlighter::do_highlighting(text, style_buffer(), parser);
   }
 }
 
@@ -334,6 +328,6 @@ void Editor::reparse_edit(int st, int old_end, int new_end)
   TSInput tsinput{buffer(), &tsinput_read_function, TSInputEncodingUTF8};
   tree = ts_parser_parse(parser, tree, tsinput);
 
-  auto str = ts_node_string(ts_tree_root_node(tree));
-  printf("\nTree: %s\n", str);
+//  auto str = ts_node_string(ts_tree_root_node(tree));
+//  printf("\nTree: %s\n", str);
 }

@@ -35,6 +35,20 @@ CPMAddPackage(
         GITHUB_REPOSITORY alex85k/sqlite3-cmake
 )
 
+CPMAddPackage(
+        NAME corrosion
+        GIT_TAG master
+        GITHUB_REPOSITORY corrosion-rs/corrosion
+)
+
+corrosion_import_crate(MANIFEST_PATH ${tree-sitter_SOURCE_DIR}/highlight/Cargo.toml)
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
 add_executable(iditor
         src/main/main.cpp
         src/main/Editor.cpp
@@ -53,11 +67,11 @@ add_executable(iditor
 target_include_directories(iditor PUBLIC ${fltk_SOURCE_DIR})
 target_include_directories(iditor PUBLIC ${fltk_BINARY_DIR})
 
-target_include_directories(iditor PUBLIC ${tree-sitter_SOURCE_DIR}/lib/src ${tree-sitter_SOURCE_DIR}/lib/include)
+target_include_directories(iditor PUBLIC ${tree-sitter_SOURCE_DIR}/lib/src ${tree-sitter_SOURCE_DIR}/lib/include ${tree-sitter_SOURCE_DIR}/highlight/include)
 
 target_link_directories(iditor PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(iditor PUBLIC fltk sqlite3)
+target_link_libraries(iditor PUBLIC fltk sqlite3 tree-sitter-highlight)
 
 if (APPLE)
     target_link_libraries(iditor PUBLIC "-framework Cocoa -framework Foundation")

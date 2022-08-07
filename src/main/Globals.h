@@ -25,4 +25,6 @@ public:
   static std::set<std::string> includeDirectories;
   static std::map<std::string, std::string> definitions;
   static std::map<std::string, Macro> macros;
+
+  static  const char* highlight_query;
 };

@@ -8,7 +8,7 @@ function(_bundle_resources _target_name)
   _add_resource_files(${_target_name} ${_iditor_resources_root} "" otf "${total_list}")
   
   cmrc_add_resource_library(
-    iditor_resources
+    ${_target_name}resources
     ALIAS iditor::rc
     NAMESPACE iditor
     WHENCE ${_iditor_resources_root}

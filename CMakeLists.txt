@@ -41,6 +41,8 @@ CPMAddPackage(
         GITHUB_REPOSITORY corrosion-rs/corrosion
 )
 
+CPMAddPackage("gh:catchorg/Catch2#v3.1.0")
+
 corrosion_import_crate(MANIFEST_PATH ${tree-sitter_SOURCE_DIR}/highlight/Cargo.toml)
 
 get_cmake_property(_variableNames VARIABLES)
@@ -57,6 +59,7 @@ add_executable(iditor
         src/main/Preproc.cpp
         src/main/Include.cpp
         src/main/Globals.cpp
+        src/main/Declarations.cpp
         src/main/Db.cpp
         src/main/iditor_tokenizer.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
@@ -77,4 +80,24 @@ if (APPLE)
     target_link_libraries(iditor PUBLIC "-framework Cocoa -framework Foundation")
 endif()
 
+add_executable(iditor-tests
+        src/main/Preproc.cpp
+        src/main/Include.cpp
+        src/main/Globals.cpp
+        src/main/Declarations.cpp
+        src/main/Db.cpp
+        src/main/iditor_tokenizer.cpp
+        src/test/DeclarationsTest.cpp
+        ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
+        ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
+        ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc
+        )
+
+target_include_directories(iditor-tests PUBLIC ${fltk_SOURCE_DIR})
+target_include_directories(iditor-tests PUBLIC ${fltk_BINARY_DIR})
+target_include_directories(iditor-tests PUBLIC ${tree-sitter_SOURCE_DIR}/lib/src ${tree-sitter_SOURCE_DIR}/lib/include ${tree-sitter_SOURCE_DIR}/highlight/include)
+target_link_directories(iditor-tests PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(iditor-tests PUBLIC fltk sqlite3 tree-sitter-highlight Catch2::Catch2WithMain)
+
 _bundle_resources(iditor)
+

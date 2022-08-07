@@ -2,7 +2,6 @@
 
 #include "Preproc.h"
 #include "Db.h"
-#include "Highlighter.h"
 
 extern "C" {
 TSLanguage *tree_sitter_cpp();
@@ -75,6 +74,12 @@ Editor::~Editor()
 int Editor::handle(int event)
 {
   buffer()->primary_selection()->position(&sel_st, &sel_end);
+
+  if (event != FL_MOVE)
+  {
+    hl.stop();
+    while (hl.isRunning()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
 
   if (event == FL_KEYBOARD && Fl::event_ctrl() && Fl::event_key() == FL_BackSpace)
   {
@@ -219,9 +224,7 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     sel_st = 0;
     sel_end = 0;
 
-    Highlighter::do_highlighting(old_tree, tree, buffer()->text(), style_buffer());
-
-    ts_tree_delete(old_tree);
+    hl.highlight(old_tree, tree, buffer()->text(), style_buffer());
   }
 
   if (browser_items.empty())

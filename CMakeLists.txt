@@ -18,7 +18,7 @@ CPMAddPackage(
 CPMAddPackage(
         NAME tree-sitter
         GIT_TAG master
-        GITHUB_REPOSITORY tree-sitter/tree-sitter
+        GITHUB_REPOSITORY commercial-emacs/tree-sitter
         DOWNLOAD_ONLY YES
 )
 

@@ -187,7 +187,7 @@ int Editor::handle(int event)
   return result;
 }
 
-void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *)
+void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char* deletedText)
 {
   if (nInserted > 0)
   {
@@ -204,12 +204,21 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     auto edit_old_end = sel_end;
     auto edit_new_end = (edit_st + nInserted) - nDeleted;
 
+    auto old_tree = ts_tree_copy(tree);
+
     reparse_edit(edit_st, edit_old_end, edit_new_end);
 
     sel_st = 0;
     sel_end = 0;
 
-    Highlighter::do_highlighting(tree, buffer()->text(), style_buffer());
+    auto newline_was_deleted = deletedText != nullptr && strcmp(deletedText, "\n") == 0;
+
+    if (strcmp(buffer()->text_range(edit_st, edit_new_end), "\n") != 0 && !newline_was_deleted)
+    {
+      Highlighter::do_highlighting(old_tree, tree, buffer()->text(), style_buffer());
+    }
+
+    ts_tree_delete(old_tree);
   }
 
   if (browser_items.empty())

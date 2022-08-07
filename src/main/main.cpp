@@ -63,7 +63,7 @@ int main()
   browser->clear_visible_focus();
   browser->hide();
   editor->setBrowser(browser);
-  editor->text("class Foo { void bar(); int x = 42;};\n");
+  editor->text("class Foo { void bar() { printf(\"\"); } }; struct Bar { }; \n");
   win->add(editor);
   win->add(browser);
   win->resizable(editor);

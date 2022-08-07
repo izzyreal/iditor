@@ -1,6 +1,8 @@
 #pragma once
 
 #include "EditorDraw.h"
+#include "Highlighter.h"
+
 #include <FL/Fl_Hold_Browser.H>
 
 #include <tree_sitter/api.h>
@@ -72,6 +74,7 @@ private:
   std::vector<std::string> preprocessorDefinitions;
   std::vector<std::string> browser_items;
 
+  Highlighter hl;
   TSParser *parser = ts_parser_new();
   TSTree *tree = nullptr;
 

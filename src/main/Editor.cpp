@@ -27,11 +27,11 @@ Editor::Editor(int X, int Y, int W, int H)
 
   static const Fl_Text_Editor::Style_Table_Entry stable[] = {
       {FL_GRAY,         test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_GREEN,   test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW,   test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_CYAN,    test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_YELLOW,  test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_MAGENTA, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_RED, test_font, 12, ATTR_BGCOLOR},
+      {FL_MAGENTA,  test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_YELLOW, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_GREEN, test_font, 12, ATTR_BGCOLOR},
       {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
       {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
   };

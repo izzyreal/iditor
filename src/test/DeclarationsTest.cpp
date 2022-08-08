@@ -31,4 +31,8 @@ TEST_CASE("Declarations", "[declarations]")
   code = "namespace foo::bar { class Fizz{}; }";
   res = Declarations::get(code);
   REQUIRE(contains(res, "foo::bar::Fizz"));
+
+  code = "void foo();";
+  res = Declarations::get(code);
+  REQUIRE(contains(res, "foo"));
 }

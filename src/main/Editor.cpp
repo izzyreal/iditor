@@ -60,7 +60,12 @@ void Editor::blinkCursor(void *data)
   editor->mCursorOn = editor->mCursorOn == 0 ? 1 : 0;
 
   editor->redraw();
-  editor->browser->redraw();
+    
+  if (editor->browser_items.size() > 0)
+  {
+    editor->browser->redraw();
+  }
+
   Fl::repeat_timeout(0.5, blinkCursor, data);
 }
 

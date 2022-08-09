@@ -2,6 +2,7 @@
 
 #include "Preproc.h"
 #include "Db.h"
+#include "Declarations.h"
 
 extern "C" {
 TSLanguage *tree_sitter_cpp();
@@ -25,14 +26,14 @@ Editor::Editor(int X, int Y, int W, int H)
   ts_parser_set_language(parser, tree_sitter_cpp());
 
   static const Fl_Text_Editor::Style_Table_Entry stable[] = {
-      {FL_GRAY,         test_font, 12, ATTR_BGCOLOR},
-      {FL_YELLOW,   test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_CYAN,    test_font, 12, ATTR_BGCOLOR},
-      {FL_MAGENTA,  test_font, 12, ATTR_BGCOLOR},
+      {FL_GRAY,        test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW,      test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_CYAN,   test_font, 12, ATTR_BGCOLOR},
+      {FL_MAGENTA,     test_font, 12, ATTR_BGCOLOR},
       {FL_DARK_YELLOW, test_font, 12, ATTR_BGCOLOR},
-      {FL_DARK_GREEN, test_font, 12, ATTR_BGCOLOR},
-      {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
-      {FL_YELLOW, test_font, 12, ATTR_BGCOLOR},
+      {FL_DARK_GREEN,  test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW,      test_font, 12, ATTR_BGCOLOR},
+      {FL_YELLOW,      test_font, 12, ATTR_BGCOLOR},
   };
 
   mStyleBuffer = new Fl_Text_Buffer();
@@ -51,8 +52,18 @@ Editor::Editor(int X, int Y, int W, int H)
   Fl::add_timeout(0.5, Editor::blinkCursor, this);
 
   tree = ts_parser_parse_string(parser, nullptr, "", 0);
-}
 
+  project.setRootPath("/Users/izmar/git/iditor/inctest");
+
+  for (auto &f: project.getHeaderFiles())
+  {
+    for (auto &d: Declarations::getFromFile(f))
+    {
+      Db::instance()->insert_declaration(d.name, d.file_path);
+      printf("Added declaration %s%s from file %s\n", d.name_space.c_str(), d.name.c_str(), d.file_path.c_str());
+    }
+  }
+}
 
 void Editor::blinkCursor(void *data)
 {
@@ -60,7 +71,7 @@ void Editor::blinkCursor(void *data)
   editor->mCursorOn = editor->mCursorOn == 0 ? 1 : 0;
 
   editor->redraw();
-    
+
   if (editor->browser_items.size() > 0)
   {
     editor->browser->redraw();
@@ -197,7 +208,7 @@ int Editor::handle(int event)
   return result;
 }
 
-void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char* deletedText)
+void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const char *deletedText)
 {
   if (nDeleted > 0)
   {

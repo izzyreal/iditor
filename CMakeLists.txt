@@ -60,6 +60,7 @@ add_executable(iditor
         src/main/Include.cpp
         src/main/Globals.cpp
         src/main/Declarations.cpp
+        src/main/Project.cpp
         src/main/Db.cpp
         src/main/iditor_tokenizer.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
@@ -86,6 +87,7 @@ add_executable(iditor-tests
         src/main/Globals.cpp
         src/main/Declarations.cpp
         src/main/Db.cpp
+        src/main/Project.cpp
         src/main/iditor_tokenizer.cpp
         src/test/DeclarationsTest.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c

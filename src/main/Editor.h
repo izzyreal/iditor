@@ -2,6 +2,7 @@
 
 #include "EditorDraw.h"
 #include "Highlighter.h"
+#include "Project.h"
 
 #include <FL/Fl_Hold_Browser.H>
 
@@ -71,6 +72,7 @@ public:
 
 private:
   Fl_Hold_Browser *browser;
+  Project project;
   std::vector<std::string> preprocessorDefinitions;
   std::vector<std::string> browser_items;
 

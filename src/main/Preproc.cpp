@@ -46,12 +46,12 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   auto proc_define = [&](TSNode n) {
     return;
     auto id_node = ts_node_child(n, 1);
-    auto id = IditorUtil::getNodeText(id_node, unprocessed);
+    auto id = IditorUtil::getNodeText(id_node, unprocessed.c_str());
 
     if (ts_node_child_count(n) >= 4)
     {
       auto value_node = ts_node_child(n, 2);
-      auto value = IditorUtil::getNodeText(value_node, unprocessed);
+      auto value = IditorUtil::getNodeText(value_node, unprocessed.c_str());
       Globals::definitions[id] = value;
       printf("Registered preprocessor definition '%s %s'\n", id.c_str(), value.c_str());
     } else {
@@ -63,7 +63,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
 
   auto proc_replace_macro_invocation = [&](TSNode n) {
     return;
-    auto m = Globals::macros.find(IditorUtil::getNodeText(n, unprocessed));
+    auto m = Globals::macros.find(IditorUtil::getNodeText(n, unprocessed.c_str()));
 
     if (m != Globals::macros.end())
     {
@@ -74,14 +74,14 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
 
       if (strcmp(parent_t, "preproc_function_def") == 0) return;
 
-      printf("call expression text: %s\n", IditorUtil::getNodeText(ctx, unprocessed).c_str());
+      printf("call expression text: %s\n", IditorUtil::getNodeText(ctx, unprocessed.c_str()).c_str());
       printf("Found macro %s\n", (*m).first.c_str());
 
       auto parameters_node = ts_node_child(ctx, 1);
       std::vector<std::string> params;
       for (int i = 0; i < ts_node_child_count(parameters_node); i++)
       {
-        auto nt = IditorUtil::getNodeText(ts_node_child(parameters_node, i), unprocessed);
+        auto nt = IditorUtil::getNodeText(ts_node_child(parameters_node, i), unprocessed.c_str());
         if (nt == "(" || nt == "," || nt == ")") continue;
         params.emplace_back(nt);
       }
@@ -97,15 +97,15 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
 
   auto proc_replace_macro_definition = [&](TSNode n) {
     return;
-    auto id = IditorUtil::getNodeText(ts_node_child(n, 1), unprocessed);
-    auto body = IditorUtil::getNodeText(ts_node_child(n, 3), unprocessed);
+    auto id = IditorUtil::getNodeText(ts_node_child(n, 1), unprocessed.c_str());
+    auto body = IditorUtil::getNodeText(ts_node_child(n, 3), unprocessed.c_str());
 
     auto args_node = ts_node_child(n, 2);
     std::vector<std::string> args;
 
     for (int i = 0; i < ts_node_child_count(args_node); i++)
     {
-      auto nt = IditorUtil::getNodeText(ts_node_child(args_node, i), unprocessed);
+      auto nt = IditorUtil::getNodeText(ts_node_child(args_node, i), unprocessed.c_str());
       if (nt == "(" || nt == "," || nt == ")") continue;
       args.emplace_back(nt);
     }
@@ -124,7 +124,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
 
   auto f = [&](TSNode n) {
     auto t = ts_node_type(n);
-    auto text = IditorUtil::getNodeText(n, unprocessed);
+    auto text = IditorUtil::getNodeText(n, unprocessed.c_str());
 
     if (strcmp(t, "preproc_function_def") == 0)
     {

@@ -60,6 +60,7 @@ add_executable(iditor
         src/main/Include.cpp
         src/main/Globals.cpp
         src/main/Declarations.cpp
+        src/main/TreeDiff.cpp
         src/main/Project.cpp
         src/main/Db.cpp
         src/main/iditor_tokenizer.cpp
@@ -88,8 +89,10 @@ add_executable(iditor-tests
         src/main/Declarations.cpp
         src/main/Db.cpp
         src/main/Project.cpp
+        src/main/TreeDiff.cpp
         src/main/iditor_tokenizer.cpp
         src/test/DeclarationsTest.cpp
+        src/test/TreeDiffTest.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc
@@ -97,7 +100,7 @@ add_executable(iditor-tests
 
 target_include_directories(iditor-tests PUBLIC ${fltk_SOURCE_DIR})
 target_include_directories(iditor-tests PUBLIC ${fltk_BINARY_DIR})
-target_include_directories(iditor-tests PUBLIC ${tree-sitter_SOURCE_DIR}/lib/src ${tree-sitter_SOURCE_DIR}/lib/include ${tree-sitter_SOURCE_DIR}/highlight/include)
+target_include_directories(iditor-tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/main ${tree-sitter_SOURCE_DIR}/lib/src ${tree-sitter_SOURCE_DIR}/lib/include ${tree-sitter_SOURCE_DIR}/highlight/include)
 target_link_directories(iditor-tests PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(iditor-tests PUBLIC fltk sqlite3 tree-sitter-highlight Catch2::Catch2WithMain)
 

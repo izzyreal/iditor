@@ -3,6 +3,7 @@
 #include "Preproc.h"
 #include "Db.h"
 #include "Declarations.h"
+#include "TreeDiff.h"
 
 extern "C" {
 TSLanguage *tree_sitter_cpp();
@@ -54,15 +55,6 @@ Editor::Editor(int X, int Y, int W, int H)
   tree = ts_parser_parse_string(parser, nullptr, "", 0);
 
   project.setRootPath("/Users/izmar/git/iditor/inctest");
-
-  for (auto &f: project.getHeaderFiles())
-  {
-    for (auto &d: Declarations::getFromFile(f))
-    {
-      Db::instance()->insert_declaration(d.name, d.file_path);
-      printf("Added declaration %s%s from file %s\n", d.name_space.c_str(), d.name.c_str(), d.file_path.c_str());
-    }
-  }
 }
 
 void Editor::blinkCursor(void *data)
@@ -236,6 +228,8 @@ void Editor::ModifyCallback(int pos, int nInserted, int nDeleted, int, const cha
     auto old_tree = ts_tree_copy(tree);
 
     reparse_edit(edit_st, edit_old_end, edit_new_end);
+
+    TreeDiff::getNewIncludes(old_tree, tree, buffer()->text(), project);
 
     sel_st = 0;
     sel_end = 0;

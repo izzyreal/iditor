@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <tree_sitter/api.h>
 
 #include "Globals.h"
 
@@ -84,17 +85,17 @@ public:
     added -= end - st;
   }
 
-  static std::string getNodeText(TSNode node, std::string &text)
+  static std::string getNodeText(TSNode node, const char* text)
   {
     auto st = ts_node_start_byte(node);
     auto end = ts_node_end_byte(node);
-    return text.substr(st, end - st);
+    return std::string(text).substr(st, end - st);
   }
 
   static std::vector<std::string> getFirstIdentifier(TSNode n, std::string &text)
   {
     auto sibling = ts_node_next_sibling(n);
-    auto nodeText = getNodeText(n, text);
+    auto nodeText = getNodeText(n, text.c_str());
 
     while (!ts_node_is_null(sibling)) {
       auto sibling_type = ts_node_type(sibling);
@@ -103,7 +104,7 @@ public:
           strcmp(sibling_type, "identifier") == 0 ||
           strcmp(sibling_type, "string_literal") == 0 ||
           strcmp(sibling_type, "system_lib_string") == 0) {
-        auto candidate = getNodeText(sibling, text);
+        auto candidate = getNodeText(sibling, text.c_str());
         return {candidate};
       }
 
@@ -113,7 +114,7 @@ public:
     return {};
   }
 
-  std::vector<std::filesystem::path> findFileInDir(const std::string& filename, std::filesystem::path dir)
+  static std::vector<std::filesystem::path> findFileInDir(const std::string& filename, std::filesystem::path dir)
   {
     for (const auto &entry: std::filesystem::directory_iterator(dir)) {
       if (entry.is_directory())
@@ -164,4 +165,21 @@ public:
     return {};
   }
 
+  static void cleanIncludeFilename(std::string &includeFilename)
+  {
+    if (!includeFilename.empty())
+    {
+      if (includeFilename[0] == '<' || includeFilename[0] == '"')
+      {
+        includeFilename = includeFilename.substr(1);
+      }
+      if (!includeFilename.empty())
+      {
+        if (includeFilename[includeFilename.length() - 1] == '<' || includeFilename[includeFilename.length() - 1] == '"')
+        {
+          includeFilename = includeFilename.substr(0, includeFilename.length() - 1);
+        }
+      }
+    }
+  }
 };

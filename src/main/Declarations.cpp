@@ -1,5 +1,7 @@
 #include "Declarations.h"
 
+#include "IditorUtil.h"
+
 #include <tree_sitter/api.h>
 
 #include <fstream>
@@ -51,20 +53,7 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
         auto end_st = ts_node_end_byte(c);
         std::string include_file_name = code.substr(c_st, end_st - c_st);
 
-        if (!include_file_name.empty())
-        {
-          if (include_file_name[0] == '<' || include_file_name[0] == '"')
-          {
-            include_file_name = include_file_name.substr(1);
-          }
-          if (!include_file_name.empty())
-          {
-            if (include_file_name[include_file_name.length() - 1] == '<' || include_file_name[include_file_name.length() - 1] == '"')
-            {
-              include_file_name = include_file_name.substr(0, include_file_name.length() - 1);
-            }
-          }
-        }
+        IditorUtil::cleanIncludeFilename(include_file_name);
 
         if (!include_file_name.empty())
         {

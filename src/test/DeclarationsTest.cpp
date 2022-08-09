@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include "../main/Declarations.h"
+#include "Declarations.h"
 
 #include <filesystem>
 #include <fstream>

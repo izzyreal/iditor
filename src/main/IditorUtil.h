@@ -175,7 +175,7 @@ public:
       }
       if (!includeFilename.empty())
       {
-        if (includeFilename[includeFilename.length() - 1] == '<' || includeFilename[includeFilename.length() - 1] == '"')
+        if (includeFilename[includeFilename.length() - 1] == '>' || includeFilename[includeFilename.length() - 1] == '"')
         {
           includeFilename = includeFilename.substr(0, includeFilename.length() - 1);
         }

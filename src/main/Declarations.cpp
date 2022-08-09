@@ -19,7 +19,7 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
   auto tree = ts_parser_parse_string(parser, nullptr, code.c_str(), code.length());
   auto root = ts_tree_root_node(tree);
 
-  printf("%s\n", ts_node_string(root));
+//  printf("%s\n", ts_node_string(root));
 
   auto query = "(type_identifier) @type\n"
                "\n"

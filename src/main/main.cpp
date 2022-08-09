@@ -42,7 +42,7 @@ int main()
   
   Globals::includeDirectories.emplace(
       "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1");
-  Globals::includeDirectories.emplace("/Users/izmar/git/editor/inctest");
+  Globals::includeDirectories.emplace("/Users/izmar/git/iditor/inctest");
   
   Fl::scrollbar_size(8);
   

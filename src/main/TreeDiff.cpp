@@ -23,7 +23,8 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
       if ((nst >= rst && nst <= rend) ||
           (nend <= rend && nend >= rst))
       {
-        if (strcmp(ts_node_type(n), "preproc_include") == 0)
+        if (strcmp(ts_node_type(n), "preproc_include") == 0 ||
+            strcmp(ts_node_type(n), "system_lib_string") == 0)
         {
           newIncludes.emplace_back(n);
         }
@@ -40,7 +41,8 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
     auto ct = ts_node_type(c);
     auto file_name = IditorUtil::getNodeText(c, text);
     IditorUtil::cleanIncludeFilename(file_name);
-    auto file = IditorUtil::findFileInDir(file_name, p.getRootPath());
+//    auto file = IditorUtil::findFileInDir(file_name, p.getRootPath());
+    auto file = IditorUtil::findIncludeFileInIncludeDirs(file_name);
     if (!file.empty())
     {
       for (auto &d: Declarations::getFromFile(file[0]))
@@ -48,6 +50,9 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
         Db::instance()->insert_declaration(d.name, d.file_path);
         printf("TreeDiff added declaration %s%s from file %s\n", d.name_space.c_str(), d.name.c_str(), d.file_path.c_str());
       }
+    }
+    else
+    {
     }
   }
   return {};

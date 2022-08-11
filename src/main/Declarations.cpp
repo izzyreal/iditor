@@ -10,6 +10,8 @@ extern "C" {
 TSLanguage *tree_sitter_cpp();
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "misc-no-recursion"
 std::vector<Declaration> Declarations::get(const std::string &code, const std::filesystem::path& file_path)
 {
   std::vector<Declaration> result;
@@ -19,9 +21,10 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
   auto tree = ts_parser_parse_string(parser, nullptr, code.c_str(), code.length());
   auto root = ts_tree_root_node(tree);
 
-//  printf("%s\n", ts_node_string(root));
+  printf("%s\n", ts_node_string(root));
 
-  auto query = "(type_identifier) @type\n"
+  auto query = "(type_definition"
+               "  type: (type_identifier) @type_definition)\n"
                "\n"
                "(function_declarator"
                "  declarator: (identifier) @function)\n"
@@ -45,8 +48,7 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
       auto name = code.substr(st, end - st);
       auto t = ts_node_type(n);
 
-      if (strcmp(t, "preproc_include") == 0)
-      {
+      auto process_preproc_include = [&]() {
         auto c = ts_node_child(n, 1);
         auto ct = ts_node_type(c);
         auto c_st = ts_node_start_byte(c);
@@ -64,6 +66,21 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
             result.emplace_back(d);
           }
         }
+      };
+
+      auto process_type_definition = [&]() {
+
+      };
+
+      if (strcmp(t, "type_definition") == 0)
+      {
+        process_type_definition();
+        continue;
+      }
+      else if (strcmp(t, "preproc_include") == 0)
+      {
+        process_preproc_include();
+        continue;
       }
 
       auto p = ts_node_parent(n);
@@ -95,6 +112,7 @@ std::vector<Declaration> Declarations::get(const std::string &code, const std::f
 
   return result;
 }
+#pragma clang diagnostic pop
 
 std::vector<Declaration> Declarations::getFromFile(const std::filesystem::path &path)
 {

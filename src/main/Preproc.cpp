@@ -43,6 +43,12 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     result += unprocessed.substr(ts_node_end_byte(p));
   };
 
+  auto proc_comment = [&](TSNode& n) {
+    auto st = ts_node_start_byte(n);
+    auto end = ts_node_end_byte(n);
+    IditorUtil::removeNodeFromText(n, result, added);
+  };
+
   auto proc_define = [&](TSNode& n) {
     auto id_node = ts_node_child(n, 1);
     auto id = IditorUtil::getNodeText(id_node, unprocessed.c_str());
@@ -148,7 +154,11 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     auto t = ts_node_type(n);
     auto text = IditorUtil::getNodeText(n, unprocessed.c_str());
 
-    if (strcmp(t, "preproc_ifdef") == 0)
+    if (strcmp(t, "comment") == 0)
+    {
+      proc_comment(n);
+    }
+    else if (strcmp(t, "preproc_ifdef") == 0)
     {
       if (!proc_preproc_ifdef(n))
       {

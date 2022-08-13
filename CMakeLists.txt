@@ -63,6 +63,7 @@ add_executable(iditor
         src/main/TreeDiff.cpp
         src/main/Project.cpp
         src/main/Db.cpp
+        src/main/decl/Decl.cpp
         src/main/iditor_tokenizer.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
@@ -90,6 +91,7 @@ add_executable(iditor-tests
         src/main/Db.cpp
         src/main/Project.cpp
         src/main/TreeDiff.cpp
+        src/main/decl/Decl.cpp
         src/main/iditor_tokenizer.cpp
         src/test/DeclarationsTest.cpp
         src/test/TreeDiffTest.cpp

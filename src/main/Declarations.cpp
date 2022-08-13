@@ -26,7 +26,8 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
   auto query = "(type_definition) @type_definition\n"
                "(class_specifier) @class_specifier\n"
                "(function_declarator) @function_declarator\n"
-               "(preproc_include) @include";
+               "(preproc_include) @preproc_include\n"
+               "(preproc_ifdef) @preproc_ifdef";
 
   TSQueryError e;
   uint32_t e_offset;
@@ -56,11 +57,14 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
 
         if (!include_file_name.empty())
         {
-          auto full_path = file_path.parent_path() / include_file_name;
+          auto includeFile = IditorUtil::findIncludeFileInIncludeDirs(include_file_name);
 
-          for (auto& d : getFromFile(full_path))
+          if (!includeFile.empty())
           {
-            result.emplace_back(d);
+            for (auto &d: getFromFile(includeFile[0]))
+            {
+              result.emplace_back(d);
+            }
           }
         }
       };
@@ -87,7 +91,6 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
       if (strcmp(t, "type_definition") == 0)
       {
         process_type_definition();
-        continue;
       }
       else if (strcmp(t, "class_specifier") == 0)
       {
@@ -100,7 +103,6 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
       else if (strcmp(t, "preproc_include") == 0)
       {
         process_preproc_include();
-        continue;
       }
     }
   }

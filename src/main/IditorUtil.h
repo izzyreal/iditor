@@ -40,29 +40,23 @@ public:
     return result;
   }
 
-  static void traverse(TSNode n, const std::string& text, std::function<void(TSNode)> f, bool ignore_errors = false)
+  static void traverse(TSNode n, const char* text, std::function<bool(TSNode&)> f, bool ignore_errors = false)
   {
-    auto ast = ts_node_string(n);
-    if (!ignore_errors && std::string(ast).find("ERROR") != std::string::npos)
-      return;
+//    auto ast = ts_node_string(n);
+//    if (!ignore_errors && std::string(ast).find("ERROR") != std::string::npos)
+//      return;
 
-    if (strcmp(ts_node_type(n), "preproc_ifdef") == 0)
+    bool continueTraversal = f(n);
+
+    if (!continueTraversal)
     {
-      auto id_node = ts_node_child(n, 1);
-      auto def_to_find = text.substr(ts_node_start_byte(id_node), ts_node_end_byte(id_node) - ts_node_start_byte(id_node));
-      if (Globals::definitions.find(def_to_find) == Globals::definitions.end())
-      {
-//        printf("Definition %s was not found\n", def_to_find.c_str());
-        return;
-      } else {
-//        printf("Definition %s was found, continueing processing\n", def_to_find.c_str());
-      }
+      return;
     }
 
-    f(n);
-
     for (int i = 0; i < ts_node_child_count(n); i++)
+    {
       traverse(ts_node_child(n, i), text, f);
+    }
   }
 
   static void collectLeafNodes(TSNode node, std::vector<TSNode> &leafNodes)

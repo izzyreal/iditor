@@ -3,11 +3,31 @@
 #include "Declarations.h"
 
 #include "decl/Decl.h"
+#include "Globals.h"
 
 #include <filesystem>
 #include <fstream>
 
 const std::string no_namespace;
+
+TEST_CASE("definitions", "[declarations]")
+{
+  auto code = "#ifndef _LIBCPP_VECTOR\n"
+              "#define _LIBCPP_VECTOR\n"
+              "#endif";
+  auto res = Declarations::get(code);
+  printf("");
+}
+
+TEST_CASE("vector", "[declarations]")
+{
+  Globals::includeDirectories.emplace(
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1");
+
+  std::string code = "#include <vector>";
+//  auto res = Declarations::get(code);
+  printf("");
+}
 
 TEST_CASE("Declarations", "[declarations]")
 {
@@ -85,6 +105,8 @@ TEST_CASE("Included declarations", "[declarations]")
   ofs = std::ofstream(path2);
   ofs << "#include \"a.h\"\n";
   ofs.close();
+
+  Globals::includeDirectories.emplace(root_path);
 
   auto res = Declarations::getFromFile(path2);
   REQUIRE(Declarations::contains(res, "Foo", no_namespace, CLASS_SPECIFIER));

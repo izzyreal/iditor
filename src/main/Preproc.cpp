@@ -18,7 +18,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   std::string result = unprocessed;
   int added = 0;
 
-  auto proc_include = [&](TSNode n) {
+  auto proc_include = [&](TSNode& n) {
     auto p = ts_node_parent(n);
     result = result.substr(0, ts_node_start_byte(p) + added);
 
@@ -43,8 +43,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     result += unprocessed.substr(ts_node_end_byte(p));
   };
 
-  auto proc_define = [&](TSNode n) {
-    return;
+  auto proc_define = [&](TSNode& n) {
     auto id_node = ts_node_child(n, 1);
     auto id = IditorUtil::getNodeText(id_node, unprocessed.c_str());
 
@@ -58,11 +57,10 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
       Globals::definitions[id] = "";
       printf("Registered preprocessor definition '%s'\n", id.c_str());
     }
-    IditorUtil::removeNodeFromText(n, result, added );
+    IditorUtil::removeNodeFromText(n, result, added);
   };
 
-  auto proc_replace_macro_invocation = [&](TSNode n) {
-    return;
+  auto proc_replace_macro_invocation = [&](TSNode& n) {
     auto m = Globals::macros.find(IditorUtil::getNodeText(n, unprocessed.c_str()));
 
     if (m != Globals::macros.end())
@@ -95,8 +93,7 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     }
   };
 
-  auto proc_replace_macro_definition = [&](TSNode n) {
-    return;
+  auto proc_replace_macro_definition = [&](TSNode& n) {
     auto id = IditorUtil::getNodeText(ts_node_child(n, 1), unprocessed.c_str());
     auto body = IditorUtil::getNodeText(ts_node_child(n, 3), unprocessed.c_str());
 
@@ -122,11 +119,43 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     IditorUtil::removeNodeFromText(n, result, added);
   };
 
-  auto f = [&](TSNode n) {
+  auto proc_preproc_ifdef = [&](TSNode& n){
+    auto id_node = ts_node_child(n, 1);
+    auto def_to_find = unprocessed.substr(ts_node_start_byte(id_node), ts_node_end_byte(id_node) - ts_node_start_byte(id_node));
+
+    if (Globals::definitions.find(def_to_find) == Globals::definitions.end())
+    {
+//        printf("Definition %s was not found\n", def_to_find.c_str());
+
+      // Remove all lines between #ifdef and #endif
+      // Do not traverse further into the scope
+      IditorUtil::removeNodeFromText(n, result, added);
+      return false;
+    } else {
+      auto remainingNode = ts_node_child(n, 2);
+      auto st = ts_node_start_byte(remainingNode);
+      auto end = ts_node_end_byte(remainingNode);
+      auto remainingCode = unprocessed.substr(st, end - st);
+      IditorUtil::removeNodeFromText(n, result, added);
+      result = remainingCode + result;
+      added += remainingCode.length();
+//        printf("Definition %s was found, continueing processing\n", def_to_find.c_str());
+    }
+    return true;
+  };
+
+  auto f = [&](TSNode& n) {
     auto t = ts_node_type(n);
     auto text = IditorUtil::getNodeText(n, unprocessed.c_str());
 
-    if (strcmp(t, "preproc_function_def") == 0)
+    if (strcmp(t, "preproc_ifdef") == 0)
+    {
+      if (!proc_preproc_ifdef(n))
+      {
+        return false;
+      }
+    }
+    else if (strcmp(t, "preproc_function_def") == 0)
     {
       proc_replace_macro_definition(n);
     }
@@ -150,9 +179,14 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     {
 //      printf("unprocessed node type: %s\n", ts_node_type(n));
     }
+    return true;
   };
 
-  IditorUtil::traverse(ts_tree_root_node(tree), unprocessed, f);
+  auto root = ts_tree_root_node(tree);
+
+  printf("AST: %s\n", ts_node_string(root));
+
+  IditorUtil::traverse(root, result.c_str(), f);
 //  printf("Preproc result:\n%s\n", result.c_str());
   return result;
 }
@@ -167,4 +201,15 @@ std::string Preproc::getPreprocessedFromFile(const std::string &filePath)
     source_dir = filePath.substr(0, source_dir_terminator);
   }
   return getPreprocessed(IditorUtil::readFile(filePath), source_dir);
+}
+
+Preproc* Preproc::_instance = nullptr;
+
+Preproc *Preproc::get()
+{
+  if (_instance == nullptr)
+  {
+    _instance = new Preproc;
+  }
+  return _instance;
 }

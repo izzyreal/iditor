@@ -95,6 +95,7 @@ add_executable(iditor-tests
         src/main/iditor_tokenizer.cpp
         src/test/DeclarationsTest.cpp
         src/test/TreeDiffTest.cpp
+        src/test/PreprocTest.cpp
         ${tree-sitter_SOURCE_DIR}/lib/src/lib.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/parser.c
         ${tree-sitter-cpp_SOURCE_DIR}/src/scanner.cc

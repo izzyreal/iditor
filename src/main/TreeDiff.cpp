@@ -30,6 +30,7 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
         }
       }
     }
+    return true;
   };
 
   IditorUtil::traverse(ts_tree_root_node(t2), text, f);

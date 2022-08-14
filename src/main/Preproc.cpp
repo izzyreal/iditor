@@ -44,8 +44,6 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
   };
 
   auto proc_comment = [&](TSNode& n) {
-    auto st = ts_node_start_byte(n);
-    auto end = ts_node_end_byte(n);
     IditorUtil::removeNodeFromText(n, result, added);
   };
 
@@ -125,11 +123,15 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     IditorUtil::removeNodeFromText(n, result, added);
   };
 
-  auto proc_preproc_ifdef = [&](TSNode& n){
+  auto proc_preproc_ifdef = [&](TSNode& n) {
+    std::string ifdefOrIfndef = IditorUtil::getNodeText(ts_node_child(n, 0), unprocessed.c_str());
+    bool isIfdef = ifdefOrIfndef == "#ifdef";
+    printf("========= ifdefOrIfndef: %s\n", ifdefOrIfndef.c_str());
     auto id_node = ts_node_child(n, 1);
-    auto def_to_find = unprocessed.substr(ts_node_start_byte(id_node), ts_node_end_byte(id_node) - ts_node_start_byte(id_node));
+    auto def_to_find = IditorUtil::getNodeText(id_node, unprocessed.c_str());
 
-    if (Globals::definitions.find(def_to_find) == Globals::definitions.end())
+    if ((isIfdef && Globals::definitions.find(def_to_find) == Globals::definitions.end()) ||
+        (!isIfdef && Globals::definitions.find(def_to_find) != Globals::definitions.end()))
     {
 //        printf("Definition %s was not found\n", def_to_find.c_str());
 

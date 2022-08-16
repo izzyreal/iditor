@@ -15,36 +15,34 @@ Preproc::Preproc()
 std::string Preproc::getPreprocessed(std::string unprocessed, std::string source_dir)
 {
   auto tree = ts_parser_parse_string(parser, nullptr, unprocessed.c_str(), strlen(unprocessed.c_str()));
-  std::string result = unprocessed;
+//  printf("AST: %s\n", ts_node_string(ts_tree_root_node(tree)));
+
+  std::string result;
   int added = 0;
 
-  auto proc_include = [&](TSNode& n) {
-    auto p = ts_node_parent(n);
-    result = result.substr(0, ts_node_start_byte(p) + added);
 
-    for (auto &i: IditorUtil::getFirstIdentifier(n, unprocessed)) {
+
+  auto proc_preproc_include = [&](TSNode& n) {
+    result = result.substr(0, ts_node_start_byte(n) + added);
+
+    for (auto &i : IditorUtil::getFirstIdentifier(ts_node_child(n, 0), unprocessed)) {
       auto trimmed = i.length() >= 2 ? i.substr(1, i.length() - 2) : i;
       auto path = source_dir;
       path = path.append("/").append(trimmed);
 
-      if (!exists(std::filesystem::path(path))) {
+      if (!exists(std::filesystem::path(path)))
+      {
         auto candidate = IditorUtil::findIncludeFileInIncludeDirs(trimmed);
         if (!candidate.empty())
           path = candidate[0];
       }
 
-      if (exists(std::filesystem::path(path))) {
-        auto original_length = ts_node_end_byte(p) - ts_node_start_byte(p);
-        auto toAdd = getPreprocessedFromFile(path);
-        result += toAdd;
-        added += toAdd.size() - original_length;
+      if (exists(std::filesystem::path(path)))
+      {
+        printf("\n==== Including preprocessed copy of file %s ====\n", path.c_str());
+        result = result.append(getPreprocessedFromFile(path));
       }
     }
-    result += unprocessed.substr(ts_node_end_byte(p));
-  };
-
-  auto proc_comment = [&](TSNode& n) {
-    IditorUtil::removeNodeFromText(n, result, added);
   };
 
   auto proc_define = [&](TSNode& n) {
@@ -53,15 +51,17 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
 
     if (ts_node_child_count(n) >= 4)
     {
-      auto value_node = ts_node_child(n, 2);
-      auto value = IditorUtil::getNodeText(value_node, unprocessed.c_str());
-      Globals::definitions[id] = value;
-      printf("Registered preprocessor definition '%s %s'\n", id.c_str(), value.c_str());
+      auto preproc_arg_node = ts_node_child(n, 2);
+      auto preproc_arg = IditorUtil::getNodeText(preproc_arg_node, unprocessed.c_str()).substr(1);
+      Globals::definitions[id] = preproc_arg;
+      printf("Registered preprocessor definition: '%s, with arg: %s'\n", id.c_str(), preproc_arg.c_str());
     } else {
       Globals::definitions[id] = "";
       printf("Registered preprocessor definition '%s'\n", id.c_str());
     }
-    IditorUtil::removeNodeFromText(n, result, added);
+//    result = result.append(unprocessed.substr(ts_node_end_byte(n)));
+    printf("");
+//    IditorUtil::removeNodeFromText(n, result, added);
   };
 
   auto proc_replace_macro_invocation = [&](TSNode& n) {
@@ -89,11 +89,11 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
       }
 
       auto expanded = (*m).second.apply(params);
-      result = result.substr(0, ts_node_start_byte(n) + added);
+//      result = result.substr(0, ts_node_start_byte(n) + added);
       auto original_length = ts_node_end_byte(n) - ts_node_start_byte(n);
-      result += expanded;
-      added += expanded.size() - original_length;
-      result += unprocessed.substr(ts_node_end_byte(n));
+//      result += expanded;
+//      added += expanded.size() - original_length;
+//      result += unprocessed.substr(ts_node_end_byte(n));
     }
   };
 
@@ -120,52 +120,81 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
       if (i != args.size() - 1) args_concatenated_again += ",";
     }
 //    printf("Registered preprocessor function definition '%s %s'\n", id.c_str(), args_concatenated_again.c_str());
-    IditorUtil::removeNodeFromText(n, result, added);
+//    IditorUtil::removeNodeFromText(n, result, added);
   };
 
   auto proc_preproc_ifdef = [&](TSNode& n) {
     std::string ifdefOrIfndef = IditorUtil::getNodeText(ts_node_child(n, 0), unprocessed.c_str());
-    bool isIfdef = ifdefOrIfndef == "#ifdef";
-    printf("========= ifdefOrIfndef: %s\n", ifdefOrIfndef.c_str());
+    std::string::iterator end_pos = std::remove(ifdefOrIfndef.begin(), ifdefOrIfndef.end(), ' ');
+    ifdefOrIfndef.erase(end_pos, ifdefOrIfndef.end());
+    bool isIfdef = ifdefOrIfndef == "#ifdef"; // We assume it's #ifndef otherwise
     auto id_node = ts_node_child(n, 1);
     auto def_to_find = IditorUtil::getNodeText(id_node, unprocessed.c_str());
 
-    if ((isIfdef && Globals::definitions.find(def_to_find) == Globals::definitions.end()) ||
-        (!isIfdef && Globals::definitions.find(def_to_find) != Globals::definitions.end()))
+    if ((isIfdef && Globals::definitions.find(def_to_find) != Globals::definitions.end()) ||
+        (!isIfdef && Globals::definitions.find(def_to_find) == Globals::definitions.end()))
     {
-//        printf("Definition %s was not found\n", def_to_find.c_str());
-
-      // Remove all lines between #ifdef and #endif
-      // Do not traverse further into the scope
-      IditorUtil::removeNodeFromText(n, result, added);
-      return false;
-    } else {
-      auto remainingNode = ts_node_child(n, 2);
-      auto st = ts_node_start_byte(remainingNode);
-      auto end = ts_node_end_byte(remainingNode);
-      auto remainingCode = unprocessed.substr(st, end - st);
-      IditorUtil::removeNodeFromText(n, result, added);
-      result = remainingCode + result;
-      added += remainingCode.length();
-//        printf("Definition %s was found, continueing processing\n", def_to_find.c_str());
+      auto st = ts_node_start_byte(ts_node_child(n, 2));
+      auto end = ts_node_end_byte(ts_node_child(n, ts_node_child_count(n) - 2));
+      auto body = unprocessed.substr(st, end - st);
+      result = result.append(getPreprocessed(body, source_dir)).append("\n");
     }
-    return true;
   };
 
-  auto f = [&](TSNode& n) {
-    auto t = ts_node_type(n);
-    auto text = IditorUtil::getNodeText(n, unprocessed.c_str());
+  std::function<bool(TSNode&)> resolve_condition;
+  resolve_condition = [&](TSNode& condition_node)->bool {
+    auto condition_type = ts_node_type(condition_node);
+    if (strcmp(condition_type, "binary_expression") == 0)
+    {
+      auto left_node = ts_node_child(condition_node, 0);
+      auto left_condition_is_met = resolve_condition(left_node);
+      auto binary_operator = ts_node_type(ts_node_child(condition_node, 1));
 
-    if (strcmp(t, "comment") == 0)
-    {
-      proc_comment(n);
-    }
-    else if (strcmp(t, "preproc_ifdef") == 0)
-    {
-      if (!proc_preproc_ifdef(n))
+      if (strcmp(binary_operator, "||") == 0 && left_condition_is_met)
       {
-        return false;
+        return true;
       }
+
+      auto right_node = ts_node_child(condition_node, 2);
+      auto right_condition_is_met = resolve_condition(right_node);
+
+      if (strcmp(binary_operator, "||") == 0)
+      {
+        return right_condition_is_met;
+      }
+
+      return left_condition_is_met && right_condition_is_met;
+    }
+    else if (strcmp(condition_type, "unary_expression") == 0)
+    {
+      auto c2 = ts_node_child(condition_node, 1);
+      return !resolve_condition(c2);
+    }
+    else if (strcmp(condition_type, "preproc_defined") == 0)
+    {
+      auto id_node = ts_node_child(condition_node, 2);
+      auto id_text = IditorUtil::getNodeText(id_node, unprocessed.c_str());
+      return Globals::definitions.find(id_text) != Globals::definitions.end();
+    }
+    return false;
+  };
+
+  auto proc_preproc_if = [&](TSNode& n) {
+    auto condition_node = ts_node_child(n, 1);
+    auto condition_is_met = resolve_condition(condition_node);
+    if (condition_is_met)
+    {
+      auto body = IditorUtil::getNodeText(ts_node_child(n, 3), unprocessed.c_str());
+      result = result.append(getPreprocessed(body, source_dir));
+    }
+  };
+
+  auto f = [&](TSNode& n) -> bool {
+    auto t = ts_node_type(n);
+    if (strcmp(t, "preproc_ifdef") == 0)
+    {
+      proc_preproc_ifdef(n);
+      return false;
     }
     else if (strcmp(t, "preproc_function_def") == 0)
     {
@@ -175,9 +204,9 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     {
 //      printf("");
     }
-    else if (strcmp(t, "#include") == 0)
+    else if (strcmp(t, "preproc_include") == 0)
     {
-      proc_include(n);
+      proc_preproc_include(n);
     }
     else if (strcmp(t, "preproc_def") == 0)
     {
@@ -185,26 +214,47 @@ std::string Preproc::getPreprocessed(std::string unprocessed, std::string source
     }
     else if (strcmp(t, "identifier") == 0)
     {
-      proc_replace_macro_invocation(n);
+//      proc_replace_macro_invocation(n);
+    }
+    else if (strcmp(t, "preproc_if") == 0)
+    {
+        proc_preproc_if(n);
+        return false;
     }
     else
     {
-//      printf("unprocessed node type: %s\n", ts_node_type(n));
+      std::vector<std::string> wanted {"function_definition"};
+      bool isInIfDef = false;
+      auto p = ts_node_parent(n);
+
+      while (!ts_node_is_null(p))
+      {
+        if (strcmp(ts_node_type(p), "preproc_ifdef") == 0)
+        {
+          isInIfDef = true;
+          break;
+        }
+        p = ts_node_parent(p);
+      }
+
+      if (!isInIfDef && std::find(wanted.begin(), wanted.end(), std::string(ts_node_type(n))) != wanted.end())
+      {
+        result = result.append(IditorUtil::getNodeText(n, unprocessed.c_str()));
+      }
     }
     return true;
   };
 
   auto root = ts_tree_root_node(tree);
 
-  printf("AST: %s\n", ts_node_string(root));
-
-  IditorUtil::traverse(root, result.c_str(), f);
+  IditorUtil::traverse(root, f);
 //  printf("Preproc result:\n%s\n", result.c_str());
   return result;
 }
 
 std::string Preproc::getPreprocessedFromFile(const std::string &filePath)
 {
+  printf("==== getting preprocessed from filePath %s\n", filePath.c_str());
   auto source_dir_terminator = filePath.find_last_of('/');
 
   std::string source_dir;

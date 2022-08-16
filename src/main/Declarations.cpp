@@ -21,7 +21,7 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
   auto tree = ts_parser_parse_string(parser, nullptr, code.c_str(), code.length());
   auto root = ts_tree_root_node(tree);
 
-  printf("%s\n", ts_node_string(root));
+//  printf("%s\n", ts_node_string(root));
 
   auto query = "(type_definition) @type_definition\n"
                "(class_specifier) @class_specifier\n"

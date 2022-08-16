@@ -40,12 +40,8 @@ public:
     return result;
   }
 
-  static void traverse(TSNode n, const char* text, std::function<bool(TSNode&)> f, bool ignore_errors = false)
+  static void traverse(TSNode n, std::function<bool(TSNode&)> f)
   {
-//    auto ast = ts_node_string(n);
-//    if (!ignore_errors && std::string(ast).find("ERROR") != std::string::npos)
-//      return;
-
     bool continueTraversal = f(n);
 
     if (!continueTraversal)
@@ -55,7 +51,7 @@ public:
 
     for (int i = 0; i < ts_node_child_count(n); i++)
     {
-      traverse(ts_node_child(n, i), text, f);
+      traverse(ts_node_child(n, i), f);
     }
   }
 

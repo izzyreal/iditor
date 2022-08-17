@@ -6,6 +6,40 @@
 
 #include <string>
 
+TEST_CASE("preproc-else", "[preprocessor]")
+{
+  Globals::definitions.clear();
+  std::string code = "#ifndef _LIBCPP_HIDE_FROM_ABI_PER_TU\n"
+                     "#  ifndef _LIBCPP_HIDE_FROM_ABI_PER_TU_BY_DEFAULT\n"
+                     "#    define _LIBCPP_HIDE_FROM_ABI_PER_TU 0\n"
+                     "#  else\n"
+                     "#    define _LIBCPP_HIDE_FROM_ABI_PER_TU_FOO 1\n" // _FOO to have 2 definitions if the else doesn't work correctly
+                     "#  endif\n"
+                     "#endif\n";
+
+  auto res = Preproc::get()->getPreprocessed(code, "");
+  REQUIRE(Globals::definitions.size() == 1);
+  REQUIRE(Globals::definitions.begin()->first == "_LIBCPP_HIDE_FROM_ABI_PER_TU");
+  REQUIRE(Globals::definitions.begin()->second == "0");
+}
+
+TEST_CASE("macro", "[preprocessor]")
+{
+  Globals::definitions.clear();
+  Globals::definitions["__cplusplus"] = "201703L";
+
+  Globals::macros.clear();
+  std::string code = "#define _MSC_VER\n"
+                     "#if defined(_MSC_VER) && !defined(__clang__)\n"
+                     "#  if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)\n"
+                     "#    define _LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER\n"
+                     "#  endif\n"
+                     "#endif\n";
+  auto res = Preproc::get()->getPreprocessed(code, "");
+  REQUIRE(res.empty());
+  REQUIRE(Globals::definitions.find("_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER") != Globals::definitions.end());
+}
+
 TEST_CASE("ifdefined", "[preprocessor]")
 {
   Globals::definitions.clear();
@@ -14,10 +48,10 @@ TEST_CASE("ifdefined", "[preprocessor]")
   Globals::macros.clear();
   std::string code = "#define _MSC_VER\n"
                      "#if defined(_MSC_VER) && !defined(__clang__)\n"
-  "#  if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)\n"
-  "#    define _LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER\n"
-  "#  endif\n"
-  "#endif\n";
+                     "#  if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)\n"
+                     "#    define _LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER\n"
+                     "#  endif\n"
+                     "#endif\n";
   auto res = Preproc::get()->getPreprocessed(code, "");
   REQUIRE(res.empty());
   REQUIRE(Globals::definitions.find("_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER") != Globals::definitions.end());

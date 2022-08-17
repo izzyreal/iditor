@@ -1,8 +1,7 @@
 #include "Editor.h"
 
-#include "Preproc.h"
 #include "Db.h"
-#include "Declarations.h"
+#include "Globals.h"
 #include "TreeDiff.h"
 
 extern "C" {
@@ -55,6 +54,8 @@ Editor::Editor(int X, int Y, int W, int H)
   tree = ts_parser_parse_string(parser, nullptr, "", 0);
 
   project.setRootPath("/Users/izmar/git/iditor/inctest");
+
+  Globals::definitions["__cplusplus"] = "201703L";
 }
 
 void Editor::blinkCursor(void *data)
@@ -146,9 +147,9 @@ int Editor::handle(int event)
         word_end = buffer()->word_end(insert_position() - 1);
       }
 
-      buffer()->remove(word_st, word_end);
-
       auto suggestion_word = browser_items[browser->value() - 1];
+
+      buffer()->remove(word_st, word_end);
 
       insert(suggestion_word.c_str());
       set_changed();

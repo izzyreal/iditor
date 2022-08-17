@@ -1,6 +1,7 @@
 #include "Declarations.h"
 
 #include "IditorUtil.h"
+#include "Preproc.h"
 
 #include <tree_sitter/api.h>
 
@@ -18,7 +19,9 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
 
   auto parser = ts_parser_new();
   ts_parser_set_language(parser, tree_sitter_cpp());
-  auto tree = ts_parser_parse_string(parser, nullptr, code.c_str(), code.length());
+  std::set<std::string> alreadyIncluded;
+  auto preprocessed = Preproc::get()->getPreprocessed(code, file_path.parent_path(), alreadyIncluded);
+  auto tree = ts_parser_parse_string(parser, nullptr, preprocessed.c_str(), preprocessed.length());
   auto root = ts_tree_root_node(tree);
 
 //  printf("%s\n", ts_node_string(root));
@@ -26,8 +29,7 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
   auto query = "(type_definition) @type_definition\n"
                "(class_specifier) @class_specifier\n"
                "(function_declarator) @function_declarator\n"
-               "(preproc_include) @preproc_include\n"
-               "(preproc_ifdef) @preproc_ifdef";
+               "(preproc_include) @preproc_include";
 
   TSQueryError e;
   uint32_t e_offset;
@@ -36,55 +38,68 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
   ts_query_cursor_exec(cursor, q, root);
   TSQueryMatch m;
 
+  auto defs = Globals::definitions;
+
+  auto is_included_after_preprocessing = [&](TSNode& n) -> bool {
+    auto p = ts_node_parent(n);
+    bool is_in_def = false;
+    bool def_is_satisfied = true;
+    while (!ts_node_is_null(p))
+    {
+      auto pt = ts_node_type(p);
+      if (strcmp(pt, "translation_unit") == 0)
+      {
+        break;
+      }
+      else if (strcmp(pt, "preproc_if") == 0)
+      {
+        is_in_def = true;
+        auto condition_node = ts_node_child(n, 1);
+        auto condition_is_met = evaluate_condition(condition_node, preprocessed, defs);
+        if (!condition_is_met)
+        {
+          def_is_satisfied = false;
+          break;
+        }
+      }
+      p = ts_node_parent(p);
+    }
+    return !is_in_def || def_is_satisfied;
+  };
+
   while (ts_query_cursor_next_match(cursor, &m))
   {
     for (int i = 0; i < m.capture_count; i++)
     {
       std::string name_space;
       auto n = m.captures[i].node;
+
+      if (!is_included_after_preprocessing(n))
+      {
+        continue;
+      }
+
       auto st = ts_node_start_byte(n);
       auto end = ts_node_end_byte(n);
-      auto name = code.substr(st, end - st);
+      auto name = preprocessed.substr(st, end - st);
       auto t = ts_node_type(n);
 
-      auto process_preproc_include = [&]() {
-        auto c = ts_node_child(n, 1);
-        auto c_st = ts_node_start_byte(c);
-        auto end_st = ts_node_end_byte(c);
-        std::string include_file_name = code.substr(c_st, end_st - c_st);
-
-        IditorUtil::cleanIncludeFilename(include_file_name);
-
-        if (!include_file_name.empty())
-        {
-          auto includeFile = IditorUtil::findIncludeFileInIncludeDirs(include_file_name);
-
-          if (!includeFile.empty())
-          {
-            for (auto &d: getFromFile(includeFile[0]))
-            {
-              result.emplace_back(d);
-            }
-          }
-        }
-      };
-
       auto process_type_definition = [&]() {
-        auto typeTypeID = IditorUtil::getNodeText(ts_node_child(n, 1), code.c_str());
-        auto declaratorTypeID = IditorUtil::getNodeText(ts_node_child(n, 2), code.c_str());
-        auto ns = getNamespaceForNode(n, code);
+        auto typeTypeID = IditorUtil::getNodeText(ts_node_child(n, 1), preprocessed.c_str());
+        auto declaratorTypeID = IditorUtil::getNodeText(ts_node_child(n, 2), preprocessed.c_str());
+        auto ns = getNamespaceForNode(n, preprocessed);
         result.emplace_back(std::make_shared<TypeDefDecl>(ns, typeTypeID, declaratorTypeID));
       };
 
       auto process_class_specifier = [&]() {
-        auto name = IditorUtil::getNodeText(ts_node_child(n, 1), code.c_str());
-        auto ns = getNamespaceForNode(n, code);
+        auto name = IditorUtil::getNodeText(ts_node_child(n, 1), preprocessed.c_str());
+        auto ns = getNamespaceForNode(n, preprocessed);
         result.emplace_back(std::make_shared<ClassSpecDecl>(ns, name));
       };
 
       auto process_function_declarator = [&]() {
-        auto name = IditorUtil::getNodeText(ts_node_child(n, 0), code.c_str());
-        auto ns = getNamespaceForNode(n, code);
+        auto name = IditorUtil::getNodeText(ts_node_child(n, 0), preprocessed.c_str());
+        auto ns = getNamespaceForNode(n, preprocessed);
         result.emplace_back(std::make_shared<FuncDeclaratorDecl>(ns, name));
       };
 
@@ -99,10 +114,6 @@ std::vector<std::shared_ptr<Decl>> Declarations::get(const std::string &code, co
       else if (strcmp(t, "function_declarator") == 0)
       {
         process_function_declarator();
-      }
-      else if (strcmp(t, "preproc_include") == 0)
-      {
-        process_preproc_include();
       }
     }
   }
@@ -173,4 +184,42 @@ bool Declarations::contains(const std::vector<std::shared_ptr<Decl>> &declaratio
                            declaration->getNamespace() == name_space &&
                            declaration->getType() == declaration_type);
                      });
+}
+
+bool Declarations::evaluate_condition(TSNode& condition_node, const std::string& text, const std::map<std::string, std::string>& defs)
+{
+  auto condition_type = ts_node_type(condition_node);
+  if (strcmp(condition_type, "binary_expression") == 0)
+  {
+    auto left_node = ts_node_child(condition_node, 0);
+    auto left_condition_is_met = evaluate_condition(left_node, text, defs);
+    auto binary_operator = ts_node_type(ts_node_child(condition_node, 1));
+
+    if (strcmp(binary_operator, "||") == 0 && left_condition_is_met)
+    {
+      return true;
+    }
+
+    auto right_node = ts_node_child(condition_node, 2);
+    auto right_condition_is_met = evaluate_condition(right_node, text, defs);
+
+    if (strcmp(binary_operator, "||") == 0)
+    {
+      return right_condition_is_met;
+    }
+
+    return left_condition_is_met && right_condition_is_met;
+  }
+  else if (strcmp(condition_type, "unary_expression") == 0)
+  {
+    auto c2 = ts_node_child(condition_node, 1);
+    return !evaluate_condition(c2, text, defs);
+  }
+  else if (strcmp(condition_type, "preproc_defined") == 0)
+  {
+    auto id_node = ts_node_child(condition_node, 2);
+    auto id_text = IditorUtil::getNodeText(id_node, text.c_str());
+    return defs.find(id_text) != defs.end();
+  }
+  return false;
 }

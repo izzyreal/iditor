@@ -11,7 +11,10 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
   std::vector<std::string> result;
   std::vector<TSNode> newIncludes;
 
-  auto f = [&](TSNode n) {
+  std::vector<TSNode> leafNodes;
+  IditorUtil::collectLeafNodes(ts_tree_root_node(t2), leafNodes);
+
+  auto f = [&](TSNode n) -> void {
     for (int i = 0; i < change_count; i++)
     {
       auto r = ranges[i];
@@ -20,26 +23,26 @@ std::vector<std::string> TreeDiff::getNewIncludes(TSTree *t1, TSTree *t2, const 
       auto nst = ts_node_start_byte(n);
       auto nend = ts_node_end_byte(n);
 
-      if ((nst >= rst && nst <= rend) ||
-          (nend <= rend && nend >= rst))
+      if ((nst >= rst && nst < rend) ||
+          (nend <= rend && nend > rst))
       {
-        if (strcmp(ts_node_type(n), "preproc_include") == 0 ||
-            strcmp(ts_node_type(n), "system_lib_string") == 0)
+        if (strcmp(ts_node_type(n), "system_lib_string") == 0)
         {
-          newIncludes.emplace_back(n);
+          newIncludes.push_back(n);
         }
       }
     }
-    return true;
   };
 
-  IditorUtil::traverse(ts_tree_root_node(t2), f);
+  for (auto& n : leafNodes)
+  {
+    f(n);
+  }
+//  IditorUtil::traverse(ts_tree_root_node(t2), f);
 
   for (auto& n : newIncludes)
   {
-    auto t = ts_node_type(n);
-    auto c = ts_node_child(n, 1);
-    auto file_name = IditorUtil::getNodeText(c, text);
+    auto file_name = IditorUtil::getNodeText(n, text);
     IditorUtil::cleanIncludeFilename(file_name);
 
     auto file = IditorUtil::findIncludeFileInIncludeDirs(file_name);

@@ -82,7 +82,7 @@ public:
     return std::string(text).substr(st, end - st);
   }
 
-  static std::vector<std::string> getFirstIdentifier(TSNode n, std::string &text)
+  static std::vector<std::string> getFirstIdentifier(TSNode n, const std::string &text)
   {
     auto sibling = ts_node_next_sibling(n);
     auto nodeText = getNodeText(n, text.c_str());
